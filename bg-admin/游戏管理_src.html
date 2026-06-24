@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>游戏管理</title>
+<link rel="stylesheet" href="./element-plus.css">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  html, body, #app { height: 100%; margin: 0; }
+  .layout { height: 100%; }
+  [v-cloak] { display: none; }
+  /* 列设置弹层 */
+  .col-setting { padding: 4px 0; }
+  .col-setting-header { padding: 0 8px 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; }
+  .col-setting .el-checkbox { display: flex; padding: 4px 8px; margin: 0; }
+  /* 厂商/游戏限制分组复选 */
+  .grp-title { font-size: 14px; font-weight: 600; color: #1f2937; margin: 14px 0 8px; }
+  .grp-box { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  /* JSON 单元格 */
+  .json-cell { font-family: Consolas, monospace; font-size: 12px; color: #6b7280; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <el-container class="layout">
+    <!-- 左侧菜单：仅「游戏管理」可点，其余分组置灰 -->
+    <el-aside :width="collapsed ? '64px' : '220px'" class="aside">
+      <div class="logo"><span class="logo-badge">66</span><span v-show="!collapsed" class="logo-text">Lottery 后台</span></div>
+      <el-scrollbar>
+        <el-menu :default-active="activeMenu" :collapse="collapsed" :collapse-transition="false"
+          background-color="#1f2937" text-color="#d1d5db" active-text-color="#ffffff" @select="onMenuSelect">
+          <el-sub-menu index="member" disabled><template #title><el-icon><User/></el-icon><span>会员管理</span></template></el-sub-menu>
+          <el-sub-menu index="finance" disabled><template #title><el-icon><Money/></el-icon><span>财务管理</span></template></el-sub-menu>
+          <el-sub-menu index="game"><template #title><el-icon><Grid/></el-icon><span>游戏管理</span></template>
+            <el-menu-item index="game-restrict">游戏限制</el-menu-item>
+            <el-menu-item index="game-list">游戏列表</el-menu-item>
+            <el-menu-item index="game-classify">游戏分类</el-menu-item>
+            <el-menu-item index="game-manufacturer">游戏厂商</el-menu-item>
+            <el-menu-item index="game-keyword">搜索关键词</el-menu-item>
+          </el-sub-menu>
+          <el-sub-menu index="tripartite" disabled><template #title><el-icon><Connection/></el-icon><span>三方游戏</span></template></el-sub-menu>
+          <el-sub-menu index="rebate" disabled><template #title><el-icon><Present/></el-icon><span>活动福利</span></template></el-sub-menu>
+          <el-sub-menu index="agent" disabled><template #title><el-icon><Share/></el-icon><span>代理管理</span></template></el-sub-menu>
+          <el-sub-menu index="ops" disabled><template #title><el-icon><Promotion/></el-icon><span>运营管理</span></template></el-sub-menu>
+          <el-sub-menu index="quiz" disabled><template #title><el-icon><Odometer/></el-icon><span>预测系统</span></template></el-sub-menu>
+          <el-sub-menu index="site" disabled><template #title><el-icon><Monitor/></el-icon><span>站点设置</span></template></el-sub-menu>
+        </el-menu>
+      </el-scrollbar>
+    </el-aside>
+
+    <el-container>
+      <el-header class="header">
+        <div class="header-left">
+          <el-icon class="collapse-btn" @click="collapsed=!collapsed"><Fold v-if="!collapsed"/><Expand v-else/></el-icon>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item>首页</el-breadcrumb-item>
+            <el-breadcrumb-item>游戏管理</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ crumb }}</el-breadcrumb-item>
+          </el-breadcrumb>
+        </div>
+        <div class="header-right">
+          <span class="tz-trigger"><el-icon><Clock/></el-icon> UTC+05:30</span>
+          <el-button text circle :icon="QuestionFilled" class="icon-btn" />
+          <el-popover placement="bottom-end" :width="340" trigger="click">
+            <template #reference>
+              <span class="pending-trigger"><el-badge :value="totalPending" :max="99" class="header-badge">
+                <el-button size="small" type="primary" plain :icon="Bell">待处理任务</el-button></el-badge></span>
+            </template>
+            <div class="pending-task-list"><div class="pending-task-header">待处理任务</div>
+              <div class="pending-task-item" v-for="t in pendingTasks" :key="t.key">
+                <span class="task-label">{{ t.label }}</span>
+                <span class="task-count">待处理：<b :class="{hot:t.count>0}">{{ t.count }}</b></span>
+                <el-link type="primary" :underline="false">去处理</el-link></div></div>
+          </el-popover>
+          <el-dropdown><span class="user-info"><el-avatar :size="28" class="user-avatar">C</el-avatar><span>cici</span><el-icon class="user-arrow"><ArrowDown/></el-icon></span>
+            <template #dropdown><el-dropdown-menu><el-dropdown-item>个人中心</el-dropdown-item><el-dropdown-item divided>退出登录</el-dropdown-item></el-dropdown-menu></template>
+          </el-dropdown>
+        </div>
+      </el-header>
+
+      <el-main class="main">
+        <game-restrict   v-if="activeMenu==='game-restrict'"></game-restrict>
+        <game-list       v-else-if="activeMenu==='game-list'"></game-list>
+        <game-classify   v-else-if="activeMenu==='game-classify'"></game-classify>
+        <game-manufacturer v-else-if="activeMenu==='game-manufacturer'"></game-manufacturer>
+        <game-keyword    v-else-if="activeMenu==='game-keyword'"></game-keyword>
+      </el-main>
+    </el-container>
+  </el-container>
+</div>
+
+<!-- ══════════ 游戏限制 ══════════ -->
+<template id="game-restrict-tpl">
+<div class="page">
+  <el-card shadow="never" class="table-card">
+    <el-table :data="rows" border stripe style="width:100%">
+      <el-table-column label="游戏限制" min-width="220">
+        <template #default><el-button link type="primary" @click="open('view')">查看</el-button></template>
+      </el-table-column>
+      <el-table-column label="状态" width="160" align="center">
+        <template #default="{row}"><el-tag size="small" :type="row.enabled?'danger':'info'">{{ row.enabled?'限制中':'未限制' }}</el-tag></template>
+      </el-table-column>
+      <el-table-column prop="createTime" label="创建时间" min-width="180" />
+      <el-table-column prop="updateTime" label="更新时间" min-width="180" />
+      <el-table-column label="操作" width="120" align="center" fixed="right">
+        <template #default><el-button link type="primary" size="small" @click="open('edit')">编辑</el-button></template>
+      </el-table-column>
+    </el-table>
+  </el-card>
+
+  <!-- 配置弹窗（查看=只读 / 编辑=可改）合并字段：状态开关 + 分类多选 + 分组指定游戏 -->
+  <el-dialog v-model="dlg.visible" :title="dlg.mode==='view'?'游戏限制配置（查看）':'修改游戏限制配置'"
+    width="900px" align-center :close-on-click-modal="false">
+    <el-scrollbar max-height="64vh">
+      <el-form label-width="130px" label-position="right" class="dlg-form" :disabled="dlg.mode==='view'">
+        <el-form-item label="游戏限制(状态)">
+          <el-switch v-model="form.enabled" />
+          <span style="margin-left:10px;color:#909399;font-size:12px;">开启后，下方勾选的分类 / 游戏将被限制</span>
+        </el-form-item>
+        <el-form-item label="游戏限制(分类)">
+          <el-checkbox-group v-model="form.cats">
+            <el-checkbox v-for="c in cats" :key="c" :value="c">{{ c }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="指定游戏(厂商/游戏)">
+          <div style="width:100%">
+            <div v-for="g in groups" :key="g.name">
+              <div class="grp-title">{{ g.name }}</div>
+              <el-checkbox-group v-model="form.picked" class="grp-box">
+                <el-checkbox v-for="it in g.items" :key="it" :value="it">{{ it }}</el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+        </el-form-item>
+      </el-form>
+    </el-scrollbar>
+    <template #footer>
+      <el-button @click="dlg.visible=false">{{ dlg.mode==='view'?'关闭':'取消' }}</el-button>
+      <el-button v-if="dlg.mode==='edit'" type="primary" @click="save">确定</el-button>
+    </template>
+  </el-dialog>
+</div>
+</template>
+
+<!-- ══════════ 游戏列表 ══════════ -->
+<template id="game-list-tpl">
+<div class="page">
+  <!-- 筛选 -->
+  <el-card shadow="never" class="filter-card">
+    <el-form :model="filters" label-position="right" label-width="auto" size="default" class="filter-form">
+      <el-row :gutter="12" class="filter-row">
+        <el-col :span="6"><el-form-item label="游戏厂商"><el-select v-model="filters.manufacturer" clearable filterable placeholder="请选择" style="width:100%"><el-option v-for="m in manufacturers" :key="m" :value="m" :label="m"/></el-select></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="游戏名称(中文)"><el-input v-model="filters.nameCn" placeholder="请输入游戏名称(中文)" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="游戏名称(自定义)"><el-input v-model="filters.nameCustom" placeholder="请输入游戏名称(自定义)" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="游戏状态"><select v-model="filters.gameStatus" class="f-sel"><option value="">全部</option><option value="enabled">启用</option><option value="disabled">禁用</option></select></el-form-item></el-col>
+      </el-row>
+      <template v-if="expanded">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="维护状态"><select v-model="filters.maintainStatus" class="f-sel"><option value="">全部</option><option value="ok">未维护</option><option value="maintain">维护中</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="是否热门"><select v-model="filters.isHot" class="f-sel"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="是否最新"><select v-model="filters.isNew" class="f-sel"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="是否jackpot"><select v-model="filters.isJackpot" class="f-sel"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select></el-form-item></el-col>
+        </el-row>
+      </template>
+      <div class="filter-actions"><div></div><div class="filter-actions-right">
+        <el-button type="primary" :icon="Search" @click="search">查询</el-button>
+        <el-button :icon="Refresh" @click="reset">重置</el-button>
+        <el-button type="success" :icon="Download" @click="ElMessage.success('导出任务已提交')">导出</el-button>
+        <el-button link type="primary" @click="expanded=!expanded">{{ expanded?'收起':'展开' }}<el-icon><ArrowUp v-if="expanded"/><ArrowDown v-else/></el-icon></el-button>
+      </div></div>
+    </el-form>
+  </el-card>
+
+  <!-- 表格 -->
+  <el-card shadow="never" class="table-card">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <el-button type="success" plain :disabled="!selection.length" @click="batch('enabled')">批量启用</el-button>
+        <el-button type="danger" plain :disabled="!selection.length" @click="batch('disabled')">批量禁用</el-button>
+        <el-button plain :icon="RefreshRight" @click="ElMessage.success('游戏列表缓存已刷新')">刷新缓存</el-button>
+      </div>
+      <div class="toolbar-right">
+        <el-button type="primary" :icon="Plus" @click="openAdd">新增</el-button>
+        <el-popover placement="bottom-end" :width="240" trigger="click">
+          <template #reference><el-button :icon="Operation" circle title="列设置"/></template>
+          <div class="col-setting">
+            <div class="col-setting-header"><el-checkbox :model-value="allCols" :indeterminate="someCols" @change="toggleAllCols">全选</el-checkbox></div>
+            <el-scrollbar max-height="320px"><el-checkbox v-for="c in columnOptions" :key="c.prop" v-model="c.visible" :disabled="c.required">{{ c.label }}</el-checkbox></el-scrollbar>
+          </div>
+        </el-popover>
+        <el-button :icon="RefreshRight" circle title="刷新" @click="search"/>
+      </div>
+    </div>
+    <el-table :data="paged" border stripe style="width:100%" @selection-change="r=>selection=r">
+      <el-table-column type="selection" width="42" align="center" fixed/>
+      <el-table-column v-if="vis('id')" prop="id" label="主键id" width="80" align="center" fixed/>
+      <el-table-column v-if="vis('manufacturer')" prop="manufacturer" label="游戏厂商" width="130" />
+      <el-table-column v-if="vis('name')" label="游戏名称" min-width="170">
+        <template #default="{row}">
+          <div class="multi-cell">
+            <div class="mc-row"><span class="mc-label">中文：</span><span class="mc-val">{{ row.nameCn }}</span></div>
+            <div class="mc-row"><span class="mc-label">自定义：</span><span class="mc-val mc-sub">{{ row.nameCustom }}</span></div>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="vis('icon')" label="图标" width="70" align="center">
+        <template #default="{row}"><el-image v-if="row.icon" :src="row.icon" style="width:38px;height:38px;border-radius:4px" fit="cover"><template #error><span class="cell-dash">—</span></template></el-image><span v-else class="cell-dash">—</span></template>
+      </el-table-column>
+      <el-table-column v-if="vis('code')" prop="code" label="游戏编码" width="120" />
+      <el-table-column v-if="vis('gameStatus')" label="游戏状态" width="90" align="center">
+        <template #default="{row}"><el-tag size="small" :type="row.gameStatus==='enabled'?'success':'info'">{{ row.gameStatus==='enabled'?'启用':'禁用' }}</el-tag></template>
+      </el-table-column>
+      <el-table-column v-if="vis('maintainStatus')" label="维护状态" width="90" align="center">
+        <template #default="{row}"><el-tag size="small" :type="row.maintainStatus==='ok'?'success':'warning'" effect="plain">{{ row.maintainStatus==='ok'?'未维护':'维护中' }}</el-tag></template>
+      </el-table-column>
+      <el-table-column v-if="vis('flags')" label="标签" width="150">
+        <template #default="{row}">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <el-tag v-if="row.isHot==='yes'" size="small" type="danger" effect="plain">热门 {{ row.hotSort }}</el-tag>
+            <el-tag v-if="row.isNew==='yes'" size="small" type="success" effect="plain">最新 {{ row.newSort }}</el-tag>
+            <el-tag v-if="row.isRecommend==='yes'" size="small" type="primary" effect="plain">推荐 {{ row.recommendSort }}</el-tag>
+            <el-tag v-if="row.isJackpot==='yes'" size="small" type="warning" effect="plain">JP {{ row.jackpotSort }}</el-tag>
+            <span v-if="row.isHot!=='yes'&&row.isNew!=='yes'&&row.isRecommend!=='yes'&&row.isJackpot!=='yes'" class="cell-dash">—</span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="vis('sort')" prop="sort" label="排序" width="72" align="center" sortable />
+      <el-table-column v-if="vis('rtp')" prop="rtp" label="赔率" width="80" align="right" />
+      <el-table-column v-if="vis('maxWin')" prop="maxWin" label="最高中奖金额" width="130" align="right" />
+      <el-table-column v-if="vis('addTime')" prop="addTime" label="添加时间" width="160" />
+      <el-table-column v-if="vis('updateTime')" prop="updateTime" label="最后更新时间" width="160" />
+      <el-table-column label="操作" width="200" align="center" fixed="right">
+        <template #default="{row}">
+          <div class="op-cell">
+            <el-button link type="primary" size="small" @click="openEdit(row)">修改</el-button>
+            <template v-if="row.self">
+              <el-button link type="primary" size="small" @click="openPlayway(row)">玩法配置</el-button>
+              <el-dropdown trigger="click">
+                <el-button link type="primary" size="small">更多<el-icon style="margin-left:2px"><ArrowDown/></el-icon></el-button>
+                <template #dropdown><el-dropdown-menu>
+                  <el-dropdown-item @click="openOdds(row)">赔率配置</el-dropdown-item>
+                  <el-dropdown-item divided style="color:#ef4444" @click="doDelete(row)">删除</el-dropdown-item>
+                </el-dropdown-menu></template>
+              </el-dropdown>
+            </template>
+            <el-button v-else link type="danger" size="small" @click="doDelete(row)">删除</el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+    <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size"
+      :total="filtered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background /></div>
+  </el-card>
+
+  <!-- 修改/新增（单列长表单，18 字段，全保留） -->
+  <el-dialog v-model="editDlg.visible" :title="editDlg.mode==='add'?'新增游戏':'修改游戏'" width="520px" align-center :close-on-click-modal="false" destroy-on-close>
+    <el-scrollbar max-height="62vh"><el-form class="dlg-form" label-width="118px" label-position="right" style="padding-right:8px">
+      <el-form-item label="游戏厂商" required><el-select v-model="editDlg.form.manufacturer" filterable style="width:100%"><el-option v-for="m in manufacturers" :key="m" :value="m" :label="m"/></el-select></el-form-item>
+      <el-form-item label="游戏名称(中文)" required><el-input v-model="editDlg.form.nameCn"/></el-form-item>
+      <el-form-item label="游戏名称(自定义)" required><el-input v-model="editDlg.form.nameCustom"/></el-form-item>
+      <el-form-item label="图标" required><el-input v-model="editDlg.form.icon" placeholder="icon 路径"><template #append><el-button>上传</el-button></template></el-input></el-form-item>
+      <el-form-item label="游戏编码" required><el-input v-model="editDlg.form.code" :disabled="editDlg.mode==='edit'"/></el-form-item>
+      <el-form-item label="游戏状态" required><select v-model="editDlg.form.gameStatus" class="f-sel" style="width:100%"><option value="enabled">启用</option><option value="disabled">禁用</option></select></el-form-item>
+      <el-form-item label="维护状态" required><select v-model="editDlg.form.maintainStatus" class="f-sel" style="width:100%"><option value="ok">未维护</option><option value="maintain">维护中</option></select></el-form-item>
+      <el-form-item label="排序" required><el-input v-model="editDlg.form.sort"/></el-form-item>
+      <el-form-item label="是否热门" required><select v-model="editDlg.form.isHot" class="f-sel" style="width:100%"><option value="yes">是</option><option value="no">否</option></select></el-form-item>
+      <el-form-item label="热门排序" required><el-input v-model="editDlg.form.hotSort"/></el-form-item>
+      <el-form-item label="是否推荐" required><select v-model="editDlg.form.isRecommend" class="f-sel" style="width:100%"><option value="yes">推荐</option><option value="no">否</option></select></el-form-item>
+      <el-form-item label="推荐排序"><el-input v-model="editDlg.form.recommendSort"/></el-form-item>
+      <el-form-item label="是否最新" required><select v-model="editDlg.form.isNew" class="f-sel" style="width:100%"><option value="yes">是</option><option value="no">否</option></select></el-form-item>
+      <el-form-item label="最新排序" required><el-input v-model="editDlg.form.newSort"/></el-form-item>
+      <el-form-item label="jackpot"><select v-model="editDlg.form.isJackpot" class="f-sel" style="width:100%"><option value="yes">是</option><option value="no">否</option></select></el-form-item>
+      <el-form-item label="jackpot排序"><el-input v-model="editDlg.form.jackpotSort"/></el-form-item>
+      <el-form-item label="赔率"><el-input v-model="editDlg.form.rtp"/></el-form-item>
+      <el-form-item label="最高中奖金额"><el-input v-model="editDlg.form.maxWin"/></el-form-item>
+    </el-form></el-scrollbar>
+    <template #footer><el-button @click="editDlg.visible=false">取消</el-button><el-button type="primary" @click="confirmEdit">确定</el-button></template>
+  </el-dialog>
+
+  <!-- 玩法配置 -->
+  <el-dialog v-model="pwDlg.visible" :title="'玩法配置 — '+pwDlg.gameName" width="1000px" align-center :close-on-click-modal="false" destroy-on-close>
+    <div class="table-toolbar"><div class="toolbar-left">
+      <el-button type="primary" :icon="Plus" size="small" @click="pwAdd">新增</el-button>
+      <el-button type="danger" plain size="small" :disabled="!pwDlg.sel.length" @click="pwDelSel">删除</el-button>
+    </div><div class="toolbar-right"></div></div>
+    <el-table :data="pwDlg.data" border stripe size="small" style="width:100%" @selection-change="r=>pwDlg.sel=r">
+      <el-table-column type="selection" width="42" align="center"/>
+      <el-table-column prop="name" label="玩法名称" min-width="150"/>
+      <el-table-column prop="time" label="游戏时间" width="90" align="center"/>
+      <el-table-column prop="bet" label="投注金额" min-width="150"/>
+      <el-table-column prop="multi" label="投注倍数" min-width="170"/>
+      <el-table-column label="状态" width="80" align="center"><template #default="{row}"><el-tag size="small" :type="row.enabled?'success':'danger'" effect="plain">{{ row.enabled?'启用':'禁用' }}</el-tag></template></el-table-column>
+      <el-table-column prop="sort" label="排序" width="64" align="center"/>
+      <el-table-column prop="rtp" label="返奖率" width="80" align="right"/>
+      <el-table-column prop="totalBet" label="投注总金额" width="100" align="right"/>
+      <el-table-column prop="totalWin" label="中奖总金额" width="100" align="right"/>
+      <el-table-column label="操作" width="120" align="center" fixed="right"><template #default="{row}"><div class="op-cell">
+        <el-button link type="primary" size="small" @click="ElMessage.info('修改玩法：'+row.name)">修改</el-button>
+        <el-button link type="danger" size="small" @click="pwDel(row)">删除</el-button></div></template></el-table-column>
+    </el-table>
+    <template #footer><el-button type="primary" @click="pwDlg.visible=false">确定</el-button></template>
+  </el-dialog>
+
+  <!-- 赔率配置 -->
+  <el-dialog v-model="oddsDlg.visible" :title="'赔率配置 — '+oddsDlg.gameName" width="820px" align-center :close-on-click-modal="false" destroy-on-close>
+    <el-table :data="oddsDlg.data" border stripe size="small" style="width:100%">
+      <el-table-column type="selection" width="42" align="center"/>
+      <el-table-column prop="type" label="玩法类型" width="100" align="center"/>
+      <el-table-column prop="bet" label="下注内容" min-width="120"/>
+      <el-table-column prop="result" label="开奖结果" min-width="120"/>
+      <el-table-column prop="odds" label="中奖赔率" width="100" align="right"/>
+      <el-table-column prop="initial" label="初始中奖赔率" width="120" align="right"/>
+    </el-table>
+    <template #footer><el-button @click="oddsDlg.visible=false">关闭</el-button></template>
+  </el-dialog>
+</div>
+</template>
+
+<!-- ══════════ 游戏分类 ══════════ -->
+<template id="game-classify-tpl">
+<div class="page">
+  <el-card shadow="never" class="filter-card">
+    <el-form :model="filters" label-position="right" label-width="auto" size="default" class="filter-form">
+      <el-row :gutter="12" class="filter-row">
+        <el-col :span="6"><el-form-item label="分类编码"><el-input v-model="filters.code" placeholder="请输入分类编码" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="分类名称"><el-input v-model="filters.name" placeholder="请输入分类名称" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="状态"><select v-model="filters.status" class="f-sel"><option value="">全部</option><option value="enabled">启用</option><option value="disabled">禁用</option></select></el-form-item></el-col>
+      </el-row>
+      <div class="filter-actions"><div></div><div class="filter-actions-right">
+        <el-button type="primary" :icon="Search" @click="search">查询</el-button><el-button :icon="Refresh" @click="reset">重置</el-button></div></div>
+    </el-form>
+  </el-card>
+  <el-card shadow="never" class="table-card">
+    <div class="table-toolbar"><div class="toolbar-left"></div><div class="toolbar-right">
+      <el-button type="primary" :icon="Plus" @click="ElMessage.info('新增分类')">新增</el-button>
+      <el-button plain :icon="RefreshRight" @click="ElMessage.success('分类缓存已刷新')">刷新缓存</el-button>
+    </div></div>
+    <el-table :data="paged" border stripe style="width:100%">
+      <el-table-column prop="id" label="主键id" width="80" align="center"/>
+      <el-table-column prop="code" label="分类编码" width="120"/>
+      <el-table-column label="图标" width="70" align="center"><template #default><span class="cell-dash">—</span></template></el-table-column>
+      <el-table-column prop="name" label="分类名称" min-width="180"/>
+      <el-table-column label="小类类型" width="90" align="center"><template #default="{row}"><el-tag size="small" :type="row.kind==='厂商'?'warning':'primary'" effect="plain">{{ row.kind }}</el-tag></template></el-table-column>
+      <el-table-column label="状态" width="80" align="center"><template #default="{row}"><el-tag size="small" :type="row.status==='enabled'?'success':'info'">{{ row.status==='enabled'?'启用':'禁用' }}</el-tag></template></el-table-column>
+      <el-table-column prop="sort" label="排序" width="72" align="center" sortable/>
+      <el-table-column prop="updateTime" label="最后更新时间" width="160"/>
+      <el-table-column prop="updateBy" label="最后更新人" width="110" align="center"/>
+      <el-table-column label="操作" width="220" align="center" fixed="right">
+        <template #default="{row}"><div class="op-cell">
+          <el-button link type="primary" size="small" @click="ElMessage.info('修改：'+row.name)">修改</el-button>
+          <el-button link type="primary" size="small" @click="openConfig(row)">分类配置</el-button>
+          <el-dropdown trigger="click"><el-button link type="primary" size="small">更多<el-icon style="margin-left:2px"><ArrowDown/></el-icon></el-button>
+            <template #dropdown><el-dropdown-menu>
+              <el-dropdown-item @click="openAssigned(row)">已分类列表</el-dropdown-item>
+              <el-dropdown-item v-if="row.kind==='厂商'" @click="ElMessage.info('厂商配置')">厂商配置</el-dropdown-item>
+              <el-dropdown-item v-if="row.kind==='厂商'" @click="ElMessage.info('已配置厂商列表')">已配置厂商列表</el-dropdown-item>
+              <el-dropdown-item divided style="color:#ef4444" @click="doDelete(row)">删除</el-dropdown-item>
+            </el-dropdown-menu></template>
+          </el-dropdown>
+        </div></template>
+      </el-table-column>
+    </el-table>
+    <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size" :total="filtered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+  </el-card>
+
+  <!-- 分类配置：整套游戏筛选 + 勾选 + 确认选中 -->
+  <el-dialog v-model="cfg.visible" :title="'分类配置 — '+cfg.name" width="1040px" align-center :close-on-click-modal="false" destroy-on-close>
+    <el-form label-position="right" label-width="auto" size="small" class="filter-form" style="margin-bottom:8px">
+      <el-row :gutter="10">
+        <el-col :span="6"><el-form-item label="游戏厂商"><el-select v-model="cfg.f.manufacturer" clearable filterable placeholder="请选择" style="width:100%"><el-option v-for="m in manufacturers" :key="m" :value="m" :label="m"/></el-select></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="游戏名称(中文)"><el-input v-model="cfg.f.nameCn" placeholder="请输入" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="是否热门"><select v-model="cfg.f.isHot" class="f-sel" style="width:100%"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select></el-form-item></el-col>
+        <el-col :span="6" style="text-align:right"><el-button type="primary" size="small" :icon="Search">搜索</el-button><el-button size="small" :icon="Refresh">重置</el-button><el-button type="success" size="small" :icon="Select" :disabled="!cfg.sel.length" @click="cfgConfirm">确认选中({{ cfg.sel.length }})</el-button></el-form-item></el-col>
+      </el-row>
+    </el-form>
+    <el-table :data="cfg.pool" border stripe size="small" max-height="380" style="width:100%" @selection-change="r=>cfg.sel=r">
+      <el-table-column type="selection" width="42" align="center"/>
+      <el-table-column prop="id" label="主键id" width="80" align="center"/>
+      <el-table-column prop="manufacturer" label="游戏厂商" width="130"/>
+      <el-table-column prop="nameCn" label="游戏名称(中文)" min-width="150"/>
+      <el-table-column prop="nameCustom" label="游戏名称(自定义)" min-width="150"/>
+      <el-table-column prop="code" label="游戏编码" width="130"/>
+      <el-table-column prop="gameStatus" label="游戏状态" width="90" align="center"><template #default="{row}"><el-tag size="small" :type="row.gameStatus==='enabled'?'success':'info'">{{ row.gameStatus==='enabled'?'启用':'禁用' }}</el-tag></template></el-table-column>
+    </el-table>
+    <template #footer><el-button @click="cfg.visible=false">关闭</el-button></template>
+  </el-dialog>
+
+  <!-- 已分类列表 -->
+  <el-dialog v-model="asg.visible" :title="'已分类列表 — '+asg.name" width="900px" align-center :close-on-click-modal="false" destroy-on-close>
+    <el-table :data="asg.data" border stripe size="small" max-height="420" style="width:100%">
+      <el-table-column prop="id" label="主键id" width="80" align="center"/>
+      <el-table-column prop="manufacturer" label="游戏厂商" width="130"/>
+      <el-table-column prop="nameCn" label="游戏名称(中文)" min-width="150"/>
+      <el-table-column prop="code" label="游戏编码" width="140"/>
+      <el-table-column prop="sort" label="排序" width="72" align="center"/>
+      <el-table-column label="操作" width="90" align="center"><template #default="{row}"><el-button link type="danger" size="small" @click="asgRemove(row)">移除</el-button></template></el-table-column>
+    </el-table>
+    <template #footer><el-button @click="asg.visible=false">关闭</el-button></template>
+  </el-dialog>
+</div>
+</template>
+
+<!-- ══════════ 游戏厂商 ══════════ -->
+<template id="game-manufacturer-tpl">
+<div class="page">
+  <el-card shadow="never" class="filter-card">
+    <el-form :model="filters" label-position="right" label-width="auto" size="default" class="filter-form">
+      <el-row :gutter="12" class="filter-row">
+        <el-col :span="6"><el-form-item label="厂商名称"><el-input v-model="filters.name" placeholder="请输入厂商名称" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="厂商编码"><el-input v-model="filters.code" placeholder="请输入厂商编码" clearable/></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="状态"><select v-model="filters.status" class="f-sel"><option value="">全部</option><option value="enabled">启用</option><option value="disabled">禁用</option></select></el-form-item></el-col>
+        <el-col :span="6"><el-form-item label="维护状态"><select v-model="filters.maintainStatus" class="f-sel"><option value="">全部</option><option value="ok">未维护</option><option value="maintain">维护中</option></select></el-form-item></el-col>
+      </el-row>
+      <div class="filter-actions"><div></div><div class="filter-actions-right"><el-button type="primary" :icon="Search" @click="search">查询</el-button><el-button :icon="Refresh" @click="reset">重置</el-button></div></div>
+    </el-form>
+  </el-card>
+  <el-card shadow="never" class="table-card">
+    <div class="table-toolbar"><div class="toolbar-left"></div><div class="toolbar-right">
+      <el-button type="primary" :icon="Plus" @click="openAdd">新增</el-button>
+      <el-popover placement="bottom-end" :width="240" trigger="click"><template #reference><el-button :icon="Operation" circle title="列设置"/></template>
+        <div class="col-setting"><div class="col-setting-header"><el-checkbox :model-value="allCols" :indeterminate="someCols" @change="toggleAllCols">全选</el-checkbox></div>
+          <el-scrollbar max-height="320px"><el-checkbox v-for="c in columnOptions" :key="c.prop" v-model="c.visible" :disabled="c.required">{{ c.label }}</el-checkbox></el-scrollbar></div></el-popover>
+      <el-button plain :icon="RefreshRight" @click="ElMessage.success('厂商缓存已刷新')">刷新缓存</el-button>
+    </div></div>
+    <el-table :data="paged" border stripe style="width:100%">
+      <el-table-column prop="id" label="主键id" width="80" align="center"/>
+      <el-table-column prop="name" label="厂商名称" width="140"/>
+      <el-table-column prop="code" label="厂商编码" width="150"/>
+      <el-table-column label="图标" width="70" align="center"><template #default><span class="cell-dash">—</span></template></el-table-column>
+      <el-table-column label="状态" width="80" align="center"><template #default="{row}"><el-tag size="small" :type="row.status==='enabled'?'success':'info'">{{ row.status==='enabled'?'启用':'禁用' }}</el-tag></template></el-table-column>
+      <el-table-column label="维护状态" width="90" align="center"><template #default="{row}"><el-tag size="small" :type="row.maintainStatus==='ok'?'success':'warning'" effect="plain">{{ row.maintainStatus==='ok'?'未维护':'维护中' }}</el-tag></template></el-table-column>
+      <el-table-column prop="sort" label="排序" width="72" align="center" sortable/>
+      <el-table-column v-if="vis('apiUrl')" prop="apiUrl" label="ApiUrl" min-width="180"/>
+      <el-table-column v-if="vis('gameConfig')" label="厂商配置" min-width="200"><template #default="{row}"><span class="json-cell">{{ row.gameConfig||'—' }}</span></template></el-table-column>
+      <el-table-column label="操作" width="150" align="center" fixed="right"><template #default="{row}"><div class="op-cell">
+        <el-button link type="primary" size="small" @click="openEdit(row)">修改</el-button>
+        <el-button link type="danger" size="small" @click="doDelete(row)">删除</el-button></div></template></el-table-column>
+    </el-table>
+    <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size" :total="filtered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+  </el-card>
+
+  <el-dialog v-model="editDlg.visible" :title="editDlg.mode==='add'?'新增游戏平台':'修改游戏平台'" width="500px" align-center :close-on-click-modal="false" destroy-on-close>
+    <el-form class="dlg-form" label-width="100px" label-position="right">
+      <el-form-item label="厂商名称" required><el-input v-model="editDlg.form.name"/></el-form-item>
+      <el-form-item label="厂商编码" required><el-input v-model="editDlg.form.code" :disabled="editDlg.mode==='edit'"/></el-form-item>
+      <el-form-item label="图标"><el-input v-model="editDlg.form.icon" placeholder="icon 路径"><template #append><el-button>上传</el-button></template></el-input></el-form-item>
+      <el-form-item label="状态" required><select v-model="editDlg.form.status" class="f-sel" style="width:100%"><option value="enabled">启用</option><option value="disabled">禁用</option></select></el-form-item>
+      <el-form-item label="维护状态" required><select v-model="editDlg.form.maintainStatus" class="f-sel" style="width:100%"><option value="ok">未维护</option><option value="maintain">维护中</option></select></el-form-item>
+      <el-form-item label="排序" required><el-input v-model="editDlg.form.sort"/></el-form-item>
+      <el-form-item label="ApiUrl" required><el-input v-model="editDlg.form.apiUrl"/></el-form-item>
+      <el-form-item label="gameConfig"><el-input type="textarea" :rows="3" v-model="editDlg.form.gameConfig" placeholder="厂商配置 JSON"/></el-form-item>
+    </el-form>
+    <template #footer><el-button @click="editDlg.visible=false">取消</el-button><el-button type="primary" @click="confirmEdit">确定</el-button></template>
+  </el-dialog>
+</div>
+</template>
+
+<!-- ══════════ 搜索关键词 ══════════ -->
+<template id="game-keyword-tpl">
+<div class="page">
+  <el-card shadow="never" class="filter-card">
+    <el-form label-position="right" label-width="auto" size="default" class="filter-form">
+      <el-row :gutter="12" class="filter-row" style="align-items:center">
+        <el-col :span="9"><el-form-item label="统计日期">
+          <el-radio-group v-model="quick" @change="onQuick">
+            <el-radio-button value="today">今日</el-radio-button><el-radio-button value="yesterday">昨日</el-radio-button>
+            <el-radio-button value="7d">近7天</el-radio-button><el-radio-button value="30d">近30天</el-radio-button>
+          </el-radio-group>
+        </el-form-item></el-col>
+        <el-col :span="8"><el-form-item label="日期范围"><el-date-picker v-model="range" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" @change="quick=''"/></el-form-item></el-col>
+        <el-col :span="7"><el-form-item label="跳转次数"><div style="display:flex;align-items:center;gap:6px;width:100%"><el-input v-model="jumpMin" placeholder="0"/><span>~</span><el-input v-model="jumpMax" placeholder="99999"/></div></el-form-item></el-col>
+      </el-row>
+      <div class="filter-actions"><div></div><div class="filter-actions-right"><el-button type="primary" :icon="Search" @click="search">查询</el-button><el-button :icon="Refresh" @click="reset">重置</el-button></div></div>
+    </el-form>
+  </el-card>
+  <el-card shadow="never" class="table-card">
+    <div style="font-weight:600;margin-bottom:10px">关键词统计</div>
+    <el-table :data="rows" border stripe style="width:100%">
+      <el-table-column type="index" label="序号" width="80" align="center"/>
+      <el-table-column prop="word" label="关键词" min-width="300"/>
+      <el-table-column label="关键词跳转次数" min-width="300" align="center"><template #default="{row}"><el-link type="primary" :underline="false" @click="openDetail(row)">{{ row.count }}</el-link></template></el-table-column>
+    </el-table>
+    <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size" :total="rows.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+  </el-card>
+  <el-dialog v-model="detail.visible" :title="'跳转明细 — '+detail.word" width="640px" align-center destroy-on-close>
+    <el-table :data="detail.rows" border stripe size="small" style="width:100%">
+      <el-table-column type="index" label="序号" width="70" align="center"/>
+      <el-table-column prop="game" label="跳转游戏" min-width="180"/>
+      <el-table-column prop="time" label="跳转时间" min-width="180"/>
+    </el-table>
+    <template #footer><el-button @click="detail.visible=false">关闭</el-button></template>
+  </el-dialog>
+</div>
+</template>
+
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/locale/zh-cn.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+<script>
+const { createApp, ref, reactive, computed, defineComponent } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const MANUFACTURERS = ['98club','9Wickets','BG-LIVE','BG-SLOTS','CQ9-SLOTS-PROVIDER','CQ9-SLOTS','EVOLIVE-LIVE','EVOLIVE-RNG','FC-FISHING','FCNEW-SLOTS','HB-POKER','INOUT-SLOTS','INOUTNEW-SLOTS','JDBNEW-SLOTS','JDB-SLOTS','JDB-FISHING','JLNEW-SLOTS','JL-FISHING','JL-POKER','JL-SLOTS','Kerala','QM-POKER','OneCoin','PG_SOFT','PGSINGLE-SLOTS','PP-LIVE','PPNEW-SLOTS','RGNEW-SLOTS','SABA-SPORTS','SimplePlay','SPRIBENEW-SLOTS','SPB-SLOTS','SPB-MINI','TADANEW-SLOTS','TBNEW-SLOTS','TOPBET-POKER','WGNEW-SLOTS','WIFY-LIVE','YB-LIVE'];
+
+/* ───────── 游戏列表 ───────── */
+const GAME_ROWS = [
+  { id:1, manufacturer:'98club', nameCn:'Win Go', nameCustom:'Win Go', icon:'', code:'winGo', sort:1, hotSort:0, gameStatus:'enabled', maintainStatus:'ok', isHot:'no', isNew:'yes', newSort:1, isRecommend:'yes', recommendSort:2, rtp:'97.9', maxWin:'895622222', isJackpot:'no', jackpotSort:0, addTime:'2024-02-23 01:28:26', updateTime:'2025-12-27 20:54:49', self:true },
+  { id:2, manufacturer:'98club', nameCn:'K3', nameCustom:'K3', icon:'', code:'k3', sort:2, hotSort:0, gameStatus:'enabled', maintainStatus:'ok', isHot:'no', isNew:'yes', newSort:0, isRecommend:'no', recommendSort:0, rtp:'0', maxWin:'65986666', isJackpot:'no', jackpotSort:0, addTime:'2024-02-23 01:29:14', updateTime:'2025-08-19 12:17:50', self:true },
+  { id:3, manufacturer:'98club', nameCn:'5D', nameCustom:'5D', icon:'', code:'5d', sort:5, hotSort:0, gameStatus:'enabled', maintainStatus:'ok', isHot:'no', isNew:'yes', newSort:0, isRecommend:'no', recommendSort:0, rtp:'0', maxWin:'658956666', isJackpot:'no', jackpotSort:0, addTime:'2024-02-23 01:29:35', updateTime:'2025-02-10 14:48:54', self:true },
+  { id:4, manufacturer:'98club', nameCn:'TrxWinGo', nameCustom:'Trx Win Go', icon:'', code:'trxWinGo', sort:4, hotSort:0, gameStatus:'enabled', maintainStatus:'ok', isHot:'no', isNew:'yes', newSort:0, isRecommend:'no', recommendSort:0, rtp:'0', maxWin:'985652222', isJackpot:'no', jackpotSort:0, addTime:'2024-05-05 21:42:00', updateTime:'2025-11-26 18:43:48', self:true },
+  { id:6, manufacturer:'98club', nameCn:'自研飞艇10s', nameCustom:'Aviator diy', icon:'', code:'aviator10s', sort:0, hotSort:-1, gameStatus:'enabled', maintainStatus:'ok', isHot:'yes', isNew:'no', newSort:0, isRecommend:'no', recommendSort:0, rtp:'97.28', maxWin:'0', isJackpot:'no', jackpotSort:0, addTime:'2024-08-03 13:56:59', updateTime:'2026-06-11 18:00:00', self:true },
+  { id:7, manufacturer:'98club', nameCn:'Racing', nameCustom:'Racing', icon:'', code:'racing', sort:3, hotSort:0, gameStatus:'enabled', maintainStatus:'ok', isHot:'no', isNew:'yes', newSort:1, isRecommend:'yes', recommendSort:1, rtp:'98.28', maxWin:'985652222', isJackpot:'no', jackpotSort:0, addTime:'2024-11-10 19:51:35', updateTime:'2025-08-19 12:15:55', self:true },
+  { id:23, manufacturer:'JDB-SLOTS', nameCn:'王者捕鱼', nameCustom:'King Fishing', icon:'', code:'JDB_king_fish', sort:23, hotSort:0, gameStatus:'enabled', maintainStatus:'maintain', isHot:'no', isNew:'no', newSort:0, isRecommend:'no', recommendSort:0, rtp:'96.0', maxWin:'10000000', isJackpot:'yes', jackpotSort:0, addTime:'2024-03-19 12:14:31', updateTime:'2026-02-02 06:00:02', self:false },
+  { id:101, manufacturer:'PG_SOFT', nameCn:'Rise of Apollo', nameCustom:'Rise of Apollo', icon:'', code:'PGS_101', sort:0, hotSort:0, gameStatus:'disabled', maintainStatus:'ok', isHot:'no', isNew:'no', newSort:0, isRecommend:'no', recommendSort:0, rtp:'99.8', maxWin:'0', isJackpot:'no', jackpotSort:0, addTime:'2024-04-16 04:24:44', updateTime:'2026-02-02 06:00:02', self:false },
+];
+
+const GameList = defineComponent({
+  template:'#game-list-tpl',
+  setup(){
+    const manufacturers = MANUFACTURERS;
+    const defF = ()=>({manufacturer:'',nameCn:'',nameCustom:'',gameStatus:'',maintainStatus:'',isHot:'',isNew:'',isJackpot:''});
+    const filters = reactive(defF());
+    const applied = reactive(defF());
+    const expanded = ref(false);
+    const all = ref(GAME_ROWS.map(r=>({...r})));
+    const selection = ref([]);
+    const pag = reactive({page:1,size:20});
+    const columnOptions = reactive([
+      {prop:'id',label:'主键id',visible:true,required:true},
+      {prop:'manufacturer',label:'游戏厂商',visible:true,required:true},
+      {prop:'name',label:'游戏名称',visible:true,required:true},
+      {prop:'icon',label:'图标',visible:true},
+      {prop:'code',label:'游戏编码',visible:true},
+      {prop:'gameStatus',label:'游戏状态',visible:true},
+      {prop:'maintainStatus',label:'维护状态',visible:true},
+      {prop:'flags',label:'标签(热门/最新/推荐/JP)',visible:true},
+      {prop:'sort',label:'排序',visible:true},
+      {prop:'rtp',label:'赔率',visible:false},
+      {prop:'maxWin',label:'最高中奖金额',visible:false},
+      {prop:'addTime',label:'添加时间',visible:false},
+      {prop:'updateTime',label:'最后更新时间',visible:true},
+    ]);
+    const vis = (p)=>{ const c=columnOptions.find(x=>x.prop===p); return c&&c.visible; };
+    const allCols = computed(()=>columnOptions.every(c=>c.visible));
+    const someCols = computed(()=>columnOptions.some(c=>c.visible)&&!allCols.value);
+    const toggleAllCols = (v)=>columnOptions.forEach(c=>{ if(!c.required) c.visible=v; });
+    const filtered = computed(()=> all.value.filter(r=>
+      (!applied.manufacturer || r.manufacturer===applied.manufacturer) &&
+      (!applied.nameCn || r.nameCn.toLowerCase().includes(applied.nameCn.toLowerCase())) &&
+      (!applied.nameCustom || r.nameCustom.toLowerCase().includes(applied.nameCustom.toLowerCase())) &&
+      (!applied.gameStatus || r.gameStatus===applied.gameStatus) &&
+      (!applied.maintainStatus || r.maintainStatus===applied.maintainStatus) &&
+      (!applied.isHot || r.isHot===applied.isHot) &&
+      (!applied.isNew || r.isNew===applied.isNew) &&
+      (!applied.isJackpot || r.isJackpot===applied.isJackpot)
+    ));
+    const paged = computed(()=>{ const s=(pag.page-1)*pag.size; return filtered.value.slice(s,s+pag.size); });
+    const search = ()=>{ Object.assign(applied,filters); pag.page=1; ElMessage.success('查询条件已应用'); };
+    const reset = ()=>{ Object.assign(filters,defF()); Object.assign(applied,defF()); pag.page=1; };
+    const batch = (st)=> ElMessageBox.confirm(`确认批量${st==='enabled'?'启用':'禁用'} ${selection.value.length} 个游戏？`,'提示',{type:'warning'}).then(()=>{ selection.value.forEach(r=>r.gameStatus=st); ElMessage.success('已'+(st==='enabled'?'启用':'禁用')); }).catch(()=>{});
+    const newForm = ()=>({manufacturer:'',nameCn:'',nameCustom:'',icon:'',code:'',gameStatus:'enabled',maintainStatus:'ok',sort:0,isHot:'no',hotSort:0,isRecommend:'no',recommendSort:0,isNew:'no',newSort:0,isJackpot:'no',jackpotSort:0,rtp:'',maxWin:''});
+    const editDlg = reactive({visible:false,mode:'add',form:newForm()});
+    const openAdd = ()=>{ editDlg.mode='add'; editDlg.form=newForm(); editDlg.visible=true; };
+    const openEdit = (row)=>{ editDlg.mode='edit'; editDlg.form={...row}; editDlg.visible=true; };
+    const confirmEdit = ()=>{ if(editDlg.mode==='add'){ const id=Math.max(...all.value.map(r=>r.id))+1; all.value.unshift({...editDlg.form,id,self:true,addTime:'2026-06-11 18:00:00',updateTime:'2026-06-11 18:00:00'}); ElMessage.success('游戏新增成功'); } else { const i=all.value.findIndex(r=>r.id===editDlg.form.id); if(i>=0) all.value[i]={...all.value[i],...editDlg.form}; ElMessage.success('游戏修改成功'); } editDlg.visible=false; };
+    const doDelete = (row)=> ElMessageBox.confirm(`确认删除游戏「${row.nameCn}」？删除后不可恢复。`,'删除游戏',{type:'warning',confirmButtonText:'确定',cancelButtonText:'取消'}).then(()=>{ const i=all.value.findIndex(r=>r.id===row.id); if(i>=0) all.value.splice(i,1); ElMessage.success('已删除'); }).catch(()=>{});
+    const pwDlg = reactive({visible:false,gameName:'',data:[],sel:[]});
+    const openPlayway = (row)=>{ pwDlg.gameName=row.nameCn; pwDlg.data=[
+      {name:row.nameCn+' 30 second',time:30,bet:'1|10|100|1000',multi:'1|5|10|20|50|100',enabled:true,sort:0,rtp:0.95,totalBet:500,totalWin:0},
+      {name:row.nameCn+' 1 minute',time:1,bet:'1|10|100|1000',multi:'1|5|10|20|50|100',enabled:true,sort:1,rtp:0.94,totalBet:500,totalWin:0},
+      {name:row.nameCn+' 3 minute',time:3,bet:'1|10|100|1000',multi:'1|5|10|20|50|100',enabled:true,sort:2,rtp:0.95,totalBet:500,totalWin:0},
+      {name:row.nameCn+' 5 minute',time:5,bet:'1|10|100|1000',multi:'1|5|10|20|50|100',enabled:true,sort:3,rtp:0.95,totalBet:500,totalWin:0},
+      {name:row.nameCn+' 10 minute',time:10,bet:'1|10|100|1000',multi:'1|5|10|20|50|100',enabled:true,sort:4,rtp:0.95,totalBet:500,totalWin:0},
+    ]; pwDlg.visible=true; };
+    const pwAdd = ()=>{ pwDlg.data.push({name:pwDlg.gameName+' new',time:1,bet:'1|10|100',multi:'1|5|10',enabled:true,sort:pwDlg.data.length,rtp:0.95,totalBet:0,totalWin:0}); ElMessage.success('已新增玩法'); };
+    const pwDel = (row)=>{ const i=pwDlg.data.indexOf(row); if(i>=0) pwDlg.data.splice(i,1); };
+    const pwDelSel = ()=>{ pwDlg.data=pwDlg.data.filter(r=>!pwDlg.sel.includes(r)); ElMessage.success('已删除'); };
+    const oddsDlg = reactive({visible:false,gameName:'',data:[]});
+    const openOdds = (row)=>{ oddsDlg.gameName=row.nameCn; oddsDlg.data=[
+      {type:'颜色',bet:'green',result:'green',odds:3,initial:2.15},{type:'颜色',bet:'red',result:'red',odds:3,initial:2.15},
+      {type:'颜色',bet:'violet',result:'green-violet',odds:5,initial:4.8},{type:'颜色',bet:'violet',result:'red-violet',odds:5,initial:4.8},
+      {type:'数字',bet:'0-9',result:'0-9',odds:10,initial:10},{type:'大小',bet:'big',result:'big',odds:2.5,initial:2},{type:'大小',bet:'small',result:'small',odds:2.5,initial:2},
+    ]; oddsDlg.visible=true; };
+    const icons = ElementPlusIconsVue;
+    return { manufacturers, filters, expanded, selection, pag, columnOptions, vis, allCols, someCols, toggleAllCols, filtered, paged, search, reset, batch, editDlg, openAdd, openEdit, confirmEdit, doDelete, pwDlg, openPlayway, pwAdd, pwDel, pwDelSel, oddsDlg, openOdds, ElMessage, Search:icons.Search, Refresh:icons.Refresh, Download:icons.Download, Plus:icons.Plus, Operation:icons.Operation, RefreshRight:icons.RefreshRight };
+  }
+});
+
+/* ───────── 游戏限制 ───────── */
+const GameRestrict = defineComponent({
+  template:'#game-restrict-tpl',
+  setup(){
+    const rows = ref([{ enabled:true, createTime:'2025-06-17 07:32:11', updateTime:'2026-04-28 12:28:21' }]);
+    const cats = ['自研','电子','棋牌','体育','真人','捕鱼'];
+    const groups = [
+      {name:'自研游戏',items:['winGo','k3','5D','racing','trxWinGo','Aviator diy','Money coming diy','Mines diy','kerala']},
+      {name:'电子',items:['BG-SLOTS','CQ9-SLOTS-PROVIDER','CQ9-SLOTS','FCNEW-SLOTS','FC-SLOTS','INOUT-SLOTS','INOUTNEW-SLOTS','JDB-SLOTS','JDBNEW-SLOTS','JL-SLOTS','JLNEW-SLOTS','PANDANEW-SLOTS','PGNEW-SLOTS','PGS-SLOTS','PG_SOFT','PGSINGLE-SLOTS','PPNEW-SLOTS','RGNEW-SLOTS','SPRIBENEW-SLOTS','SPB-SLOTS','SPB-SLOTS-PROVIDER','TADANEW-SLOTS','TBNEW-SLOTS','WGNEW-SLOTS']},
+      {name:'棋牌',items:['HB-POKER','JL-POKER','QM-POKER','TOPBET-POKER']},
+      {name:'体育',items:['9Wickets','SABA-SPORTS']},
+      {name:'真人',items:['BG-LIVE','EVOLIVE-LIVE','EVOLIVE-RNG','EZUGI-LIVE','PP-LIVE','WIFY-LIVE','YB-LIVE']},
+      {name:'捕鱼',items:['FC-FISHING','JDB-FISHING','JL-FISHING']},
+    ];
+    const saved = reactive({ enabled:true, cats:['电子'], picked:['BG-SLOTS','CQ9-SLOTS-PROVIDER','CQ9-SLOTS','FCNEW-SLOTS','FC-SLOTS','INOUT-SLOTS','INOUTNEW-SLOTS','JDB-SLOTS','JDBNEW-SLOTS','JL-SLOTS','JLNEW-SLOTS','PANDANEW-SLOTS','PGNEW-SLOTS','PGS-SLOTS','PG_SOFT','PGSINGLE-SLOTS','PPNEW-SLOTS','RGNEW-SLOTS','SPRIBENEW-SLOTS','SPB-SLOTS','SPB-SLOTS-PROVIDER','TADANEW-SLOTS','TBNEW-SLOTS','WGNEW-SLOTS'] });
+    const form = reactive({ enabled:true, cats:[], picked:[] });
+    const dlg = reactive({ visible:false, mode:'view' });
+    const open = (mode)=>{ dlg.mode=mode; form.enabled=saved.enabled; form.cats=[...saved.cats]; form.picked=[...saved.picked]; dlg.visible=true; };
+    const save = ()=>{ saved.enabled=form.enabled; saved.cats=[...form.cats]; saved.picked=[...form.picked]; rows.value[0].enabled=form.enabled; rows.value[0].updateTime='2026-06-11 18:00:00'; dlg.visible=false; ElMessage.success('已保存'); };
+    return { rows, cats, groups, form, dlg, open, save };
+  }
+});
+
+/* ───────── 游戏分类 ───────── */
+const CLASSIFY_ROWS = [
+  {id:1,code:'lottery',name:'Lottery',kind:'游戏',status:'enabled',sort:-1,updateTime:'2025-11-22 18:20:35',updateBy:'jack'},
+  {id:2,code:'miniGames',name:'Original',kind:'游戏',status:'enabled',sort:3,updateTime:'2025-07-04 07:23:44',updateBy:'darvin'},
+  {id:3,code:'populars',name:'Platform Recommendation',kind:'游戏',status:'enabled',sort:1,updateTime:'2025-12-08 08:15:21',updateBy:'baicai'},
+  {id:4,code:'slots',name:'Slots',kind:'厂商',status:'enabled',sort:4,updateTime:'2025-12-08 08:18:39',updateBy:'jack'},
+  {id:5,code:'fishing',name:'Fishing',kind:'游戏',status:'enabled',sort:7,updateTime:'2025-08-09 12:24:42',updateBy:'bbjjj'},
+  {id:6,code:'pvc',name:'Rummy',kind:'厂商',status:'enabled',sort:8,updateTime:'2024-09-24 17:49:25',updateBy:'admin'},
+  {id:7,code:'casino',name:'Casino',kind:'厂商',status:'enabled',sort:6,updateTime:'2024-09-11 16:18:27',updateBy:'jack'},
+  {id:8,code:'sports',name:'Sports',kind:'厂商',status:'enabled',sort:5,updateTime:'2025-11-27 08:14:53',updateBy:'jack'},
+  {id:9,code:'kerala',name:'Kerala Lottery',kind:'游戏',status:'enabled',sort:2,updateTime:'2025-11-29 14:07:37',updateBy:'jack'},
+  {id:10,code:'jackpot',name:'Jackpot',kind:'游戏',status:'enabled',sort:0,updateTime:'2026-01-18 15:10:17',updateBy:'jack'},
+  {id:11,code:'newgame',name:'New Games',kind:'游戏',status:'disabled',sort:9,updateTime:'2026-02-01 10:00:00',updateBy:'cici'},
+];
+const GameClassify = defineComponent({
+  template:'#game-classify-tpl',
+  setup(){
+    const manufacturers = MANUFACTURERS;
+    const defF=()=>({code:'',name:'',status:''});
+    const filters=reactive(defF()); const applied=reactive(defF());
+    const all=ref(CLASSIFY_ROWS.map(r=>({...r})));
+    const pag=reactive({page:1,size:20});
+    const filtered=computed(()=>all.value.filter(r=>(!applied.code||r.code.includes(applied.code))&&(!applied.name||r.name.toLowerCase().includes(applied.name.toLowerCase()))&&(!applied.status||r.status===applied.status)));
+    const paged=computed(()=>{const s=(pag.page-1)*pag.size;return filtered.value.slice(s,s+pag.size);});
+    const search=()=>{Object.assign(applied,filters);pag.page=1;ElMessage.success('查询条件已应用');};
+    const reset=()=>{Object.assign(filters,defF());Object.assign(applied,defF());pag.page=1;};
+    const doDelete=(row)=>ElMessageBox.confirm(`确认删除分类「${row.name}」？`,'删除分类',{type:'warning'}).then(()=>{const i=all.value.findIndex(r=>r.id===row.id);if(i>=0)all.value.splice(i,1);ElMessage.success('已删除');}).catch(()=>{});
+    const cfg=reactive({visible:false,name:'',f:{manufacturer:'',nameCn:'',isHot:''},pool:[],sel:[]});
+    const openConfig=(row)=>{cfg.name=row.name;cfg.pool=GAME_ROWS.map(r=>({...r}));cfg.sel=[];cfg.visible=true;};
+    const cfgConfirm=()=>{ElMessage.success(`已分配 ${cfg.sel.length} 个游戏到「${cfg.name}」`);cfg.visible=false;};
+    const asg=reactive({visible:false,name:'',data:[]});
+    const openAssigned=(row)=>{asg.name=row.name;asg.data=GAME_ROWS.slice(0,5).map(r=>({...r}));asg.visible=true;};
+    const asgRemove=(row)=>{const i=asg.data.indexOf(row);if(i>=0)asg.data.splice(i,1);ElMessage.success('已移除');};
+    const icons=ElementPlusIconsVue;
+    return {manufacturers,filters,pag,filtered,paged,search,reset,doDelete,cfg,openConfig,cfgConfirm,asg,openAssigned,asgRemove,ElMessage,Search:icons.Search,Refresh:icons.Refresh,Plus:icons.Plus,RefreshRight:icons.RefreshRight,Select:icons.Select};
+  }
+});
+
+/* ───────── 游戏厂商 ───────── */
+const MFR_ROWS = [
+  {id:1,name:'98club',code:'98club',status:'enabled',maintainStatus:'ok',sort:3,apiUrl:'localhost',gameConfig:''},
+  {id:2,name:'9Wickets',code:'9Wickets',status:'enabled',maintainStatus:'ok',sort:4,apiUrl:'https://apiinfo.cckk77.net/',gameConfig:'{"cert":"wkV..."}'},
+  {id:6,name:'JILI',code:'JL-FISHING',status:'enabled',maintainStatus:'ok',sort:-1,apiUrl:'1',gameConfig:'{"apiKey":"e..."}'},
+  {id:7,name:'FC',code:'FC-FISHING',status:'enabled',maintainStatus:'ok',sort:0,apiUrl:'1',gameConfig:'{"apiUrl":"ht..."}'},
+  {id:9,name:'JDB',code:'JDB-FISHING',status:'enabled',maintainStatus:'ok',sort:0,apiUrl:'1',gameConfig:'{"dc":"ZF",...}'},
+];
+const GameManufacturer = defineComponent({
+  template:'#game-manufacturer-tpl',
+  setup(){
+    const defF=()=>({name:'',code:'',status:'',maintainStatus:''});
+    const filters=reactive(defF());const applied=reactive(defF());
+    const all=ref(MFR_ROWS.map(r=>({...r})));
+    const pag=reactive({page:1,size:20});
+    const columnOptions=reactive([{prop:'apiUrl',label:'ApiUrl',visible:true},{prop:'gameConfig',label:'厂商配置',visible:true}]);
+    const vis=(p)=>{const c=columnOptions.find(x=>x.prop===p);return c&&c.visible;};
+    const allCols=computed(()=>columnOptions.every(c=>c.visible));
+    const someCols=computed(()=>columnOptions.some(c=>c.visible)&&!allCols.value);
+    const toggleAllCols=(v)=>columnOptions.forEach(c=>c.visible=v);
+    const filtered=computed(()=>all.value.filter(r=>(!applied.name||r.name.toLowerCase().includes(applied.name.toLowerCase()))&&(!applied.code||r.code.toLowerCase().includes(applied.code.toLowerCase()))&&(!applied.status||r.status===applied.status)&&(!applied.maintainStatus||r.maintainStatus===applied.maintainStatus)));
+    const paged=computed(()=>{const s=(pag.page-1)*pag.size;return filtered.value.slice(s,s+pag.size);});
+    const search=()=>{Object.assign(applied,filters);pag.page=1;ElMessage.success('查询条件已应用');};
+    const reset=()=>{Object.assign(filters,defF());Object.assign(applied,defF());pag.page=1;};
+    const newForm=()=>({name:'',code:'',icon:'',status:'enabled',maintainStatus:'ok',sort:0,apiUrl:'',gameConfig:''});
+    const editDlg=reactive({visible:false,mode:'add',form:newForm()});
+    const openAdd=()=>{editDlg.mode='add';editDlg.form=newForm();editDlg.visible=true;};
+    const openEdit=(row)=>{editDlg.mode='edit';editDlg.form={...row,icon:''};editDlg.visible=true;};
+    const confirmEdit=()=>{if(editDlg.form.gameConfig){try{JSON.parse(editDlg.form.gameConfig);}catch(e){ElMessage.error('厂商配置 JSON 格式不合法');return;}}if(editDlg.mode==='add'){const id=Math.max(...all.value.map(r=>r.id))+1;all.value.unshift({...editDlg.form,id});ElMessage.success('已新增厂商');}else{const i=all.value.findIndex(r=>r.id===editDlg.form.id);if(i>=0)all.value[i]={...all.value[i],...editDlg.form};ElMessage.success('已修改厂商');}editDlg.visible=false;};
+    const doDelete=(row)=>ElMessageBox.confirm(`确认删除厂商「${row.name}」？`,'删除厂商',{type:'warning'}).then(()=>{const i=all.value.findIndex(r=>r.id===row.id);if(i>=0)all.value.splice(i,1);ElMessage.success('已删除');}).catch(()=>{});
+    const icons=ElementPlusIconsVue;
+    return {filters,pag,columnOptions,vis,allCols,someCols,toggleAllCols,filtered,paged,search,reset,editDlg,openAdd,openEdit,confirmEdit,doDelete,ElMessage,Search:icons.Search,Refresh:icons.Refresh,Plus:icons.Plus,Operation:icons.Operation,RefreshRight:icons.RefreshRight};
+  }
+});
+
+/* ───────── 搜索关键词 ───────── */
+const GameKeyword = defineComponent({
+  template:'#game-keyword-tpl',
+  setup(){
+    const quick=ref('today');const range=ref([]);const jumpMin=ref('');const jumpMax=ref('');
+    const ALL=[{word:'sport',count:3},{word:'panda',count:1},{word:'aviator',count:8},{word:'rummy',count:5}];
+    const rows=ref([]); const pag=reactive({page:1,size:20});
+    const onQuick=()=>{};
+    const search=()=>{ rows.value = (quick.value==='today') ? [] : ALL.filter(r=>{const mn=jumpMin.value===''?0:+jumpMin.value;const mx=jumpMax.value===''?99999:+jumpMax.value;return r.count>=mn&&r.count<=mx;}); ElMessage.success('查询条件已应用'); };
+    const reset=()=>{quick.value='today';range.value=[];jumpMin.value='';jumpMax.value='';rows.value=[];};
+    const detail=reactive({visible:false,word:'',rows:[]});
+    const openDetail=(row)=>{detail.word=row.word;detail.rows=Array.from({length:row.count},(_,i)=>({game:['Win Go','Racing','Aviator'][i%3],time:'2026-05-'+String(10+i).padStart(2,'0')+' 14:'+String(10+i).padStart(2,'0')+':00'}));detail.visible=true;};
+    const icons=ElementPlusIconsVue;
+    return {quick,range,jumpMin,jumpMax,rows,pag,onQuick,search,reset,detail,openDetail,ElMessage,Search:icons.Search,Refresh:icons.Refresh};
+  }
+});
+
+const app = createApp({
+  components:{ GameRestrict, GameList, GameClassify, GameManufacturer, GameKeyword },
+  setup(){
+    const collapsed=ref(false);
+    const activeMenu=ref('game-list');
+    const PAGES=['game-restrict','game-list','game-classify','game-manufacturer','game-keyword'];
+    const onMenuSelect=(idx)=>{ if(PAGES.includes(idx)) activeMenu.value=idx; };
+    const crumbMap={'game-restrict':'游戏限制','game-list':'游戏列表','game-classify':'游戏分类','game-manufacturer':'游戏厂商','game-keyword':'搜索关键词'};
+    const crumb=computed(()=>crumbMap[activeMenu.value]);
+    const pendingTasks=ref([{key:'a',label:'会员申诉充值未到账',count:6},{key:'b',label:'会员申诉提现未到账',count:4}]);
+    const totalPending=computed(()=>pendingTasks.value.reduce((s,t)=>s+t.count,0));
+    const icons=ElementPlusIconsVue;
+    return { collapsed, activeMenu, onMenuSelect, crumb, pendingTasks, totalPending, QuestionFilled:icons.QuestionFilled, Bell:icons.Bell };
+  }
+});
+for(const [k,c] of Object.entries(ElementPlusIconsVue)) app.component(k,c);
+app.use(ElementPlus,{ locale:(window.ElementPlusLocaleZhCn||undefined) });
+app.mount('#app');
+</script>
+</body>
+</html>

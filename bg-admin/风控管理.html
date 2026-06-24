@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>风控管理</title>
+<link rel="stylesheet" href="./element-plus.css">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  html, body { margin: 0; background: #f0f2f5; }
+  #app { padding: 16px; }
+  [v-cloak] { display: none; }
+  /* 列设置 / 表头显示设置弹层 */
+  .col-setting { padding: 4px 0; }
+  .col-setting-header { padding: 0 8px 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; }
+  .col-setting .el-checkbox { display: flex; padding: 4px 8px; margin: 0; }
+  /* 导出字段勾选 */
+  .export-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .export-head .export-title { font-size:13px; font-weight:600; color:#1f2937; }
+  .export-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 8px; }
+  /* 默认自动规则说明 */
+  .rule-tip { color:#ef4444; font-size:12px; line-height:1.9; margin-top:14px; }
+  /* 刷子监控 同关联人数链接 */
+  .link-num { color:#409eff; cursor:pointer; }
+</style>
+</head>
+<body>
+<!-- 纯内容子页：外壳(侧栏/顶栏)由 index.html 提供；通过 URL hash 决定显示哪个子页 -->
+<div id="app" v-cloak>
+  <risk-related     v-if="view==='risk-related'"></risk-related>
+  <risk-blacklist   v-else-if="view==='risk-blacklist'"></risk-blacklist>
+  <risk-bonushunter v-else-if="view==='risk-bonushunter'"></risk-bonushunter>
+</div>
+
+<!-- ══════════ 关联查询 ══════════ -->
+<template id="risk-related-tpl">
+<div class="page">
+  <div class="qs-status-bar">
+    <span class="qs-status-tab" :class="{active:tab==='member'}" @click="tab='member'">查会员</span>
+    <span class="qs-status-tab" :class="{active:tab==='device'}" @click="tab='device'">设备关联</span>
+    <span class="qs-status-tab" :class="{active:tab==='ip'}" @click="tab='ip'">IP关联</span>
+  </div>
+
+  <!-- ───── 查会员 ───── -->
+  <template v-if="tab==='member'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="mFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="8"><el-form-item label="会员ID"><el-input v-model="mFilters.memberId" placeholder="会员ID或账号信息" clearable/></el-form-item></el-col>
+          <el-col :span="10"><el-form-item label="登录时间"><el-date-picker v-model="mFilters.range" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="mSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="mReset">重置</el-button>
+          <el-button type="success" :icon="Upload" @click="openExport">导出</el-button>
+          <el-popover placement="bottom-end" :width="240" trigger="click">
+            <template #reference><el-button :icon="Operation" plain>表头显示设置</el-button></template>
+            <div class="col-setting">
+              <div class="col-setting-header"><el-checkbox :model-value="mAllCols" :indeterminate="mSomeCols" @change="mToggleAll">全选</el-checkbox></div>
+              <el-scrollbar max-height="320px"><el-checkbox v-for="c in mCols" :key="c.prop" v-model="c.visible" :disabled="c.required">{{ c.label }}</el-checkbox></el-scrollbar>
+            </div>
+          </el-popover>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="table-card">
+      <el-table :data="mPaged" border stripe style="width:100%">
+        <el-table-column type="index" label="序号" width="70" align="center" :index="i=>(mPag.page-1)*mPag.size+i+1" fixed></el-table-column>
+        <el-table-column v-if="mVis('memberId')" prop="memberId" label="会员ID" min-width="140"></el-table-column>
+        <el-table-column v-if="mVis('loginIp')" prop="loginIp" label="登录ip" min-width="140"></el-table-column>
+        <el-table-column v-if="mVis('loginCount')" prop="loginCount" label="登录次数" width="110" align="center"></el-table-column>
+        <el-table-column v-if="mVis('ipLocation')" prop="ipLocation" label="IP归属地" min-width="160"></el-table-column>
+        <el-table-column v-if="mVis('ipMemberCount')" prop="ipMemberCount" label="此IP登录过会员数" width="160" align="center"></el-table-column>
+        <el-table-column v-if="mVis('ipLastLogin')" prop="ipLastLogin" label="此IP最近登录时间" min-width="180"></el-table-column>
+        <el-table-column v-if="mVis('remark')" label="备注" min-width="140"><template #default="{row}"><span v-if="row.remark">{{ row.remark }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="mPag.page" v-model:page-size="mPag.size" :total="mRows.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+
+    <!-- 导出弹窗（勾选导出字段） -->
+    <el-dialog v-model="exportDlg.visible" title="导出" width="560px" align-center :close-on-click-modal="false">
+      <div class="export-head">
+        <span class="export-title">导出数据 ({{ exportCheckedCount }})</span>
+        <div><el-button size="small" @click="exportAll(true)">全选</el-button><el-button size="small" @click="exportAll(false)">清空</el-button></div>
+      </div>
+      <div class="export-grid">
+        <el-checkbox v-for="f in exportFields" :key="f.prop" v-model="f.checked">{{ f.label }}</el-checkbox>
+      </div>
+      <template #footer>
+        <el-button @click="exportDlg.visible=false">取消</el-button>
+        <el-button type="primary" :disabled="exportCheckedCount===0" @click="doExport">导出</el-button>
+      </template>
+    </el-dialog>
+  </template>
+
+  <!-- ───── 设备关联 ───── -->
+  <template v-else-if="tab==='device'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="dFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="8"><el-form-item label="设备号"><el-select v-model="dFilters.deviceNo" filterable clearable placeholder="请选择" style="width:100%"><el-option v-for="r in dAll" :key="r.deviceNo" :value="r.deviceNo" :label="r.deviceNo"/></el-select></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="dSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="dReset">重置</el-button>
+          <el-button type="success" :icon="Upload" @click="ElMessage.success('导出任务已提交')">导出</el-button>
+          <el-button :icon="Operation" plain>表头显示设置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+    <el-card shadow="never" class="table-card">
+      <el-table :data="dPaged" border stripe style="width:100%">
+        <el-table-column type="index" label="序号" width="70" align="center" :index="i=>(dPag.page-1)*dPag.size+i+1" fixed></el-table-column>
+        <el-table-column prop="deviceNo" label="设备号" min-width="220"></el-table-column>
+        <el-table-column prop="regCount" label="使用此设备注册人数" width="170" align="center"></el-table-column>
+        <el-table-column prop="loginCount" label="使用此设备登录人数" width="170" align="center"></el-table-column>
+        <el-table-column prop="lastMember" label="此设备最近登录会员" min-width="160"></el-table-column>
+        <el-table-column prop="lastTime" label="会员最近登录时间" min-width="180"></el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="dPag.page" v-model:page-size="dPag.size" :total="dRows.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+  </template>
+
+  <!-- ───── IP关联 ───── -->
+  <template v-else>
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="ipFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="8"><el-form-item label="IP"><el-select v-model="ipFilters.ip" filterable clearable placeholder="请选择" style="width:100%"><el-option v-for="r in ipAll" :key="r.ip" :value="r.ip" :label="r.ip"/></el-select></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="ipSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="ipReset">重置</el-button>
+          <el-button type="success" :icon="Upload" @click="ElMessage.success('导出任务已提交')">导出</el-button>
+          <el-button :icon="Operation" plain>表头显示设置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+    <el-card shadow="never" class="table-card">
+      <el-table :data="ipPaged" border stripe style="width:100%">
+        <el-table-column type="index" label="序号" width="70" align="center" :index="i=>(ipPag.page-1)*ipPag.size+i+1" fixed></el-table-column>
+        <el-table-column prop="ip" label="ip" min-width="160"></el-table-column>
+        <el-table-column prop="regCount" label="此IP注册人数" width="150" align="center"></el-table-column>
+        <el-table-column prop="loginCount" label="此IP登录人数" width="150" align="center"></el-table-column>
+        <el-table-column prop="lastMember" label="此IP最近登录会员" min-width="160"></el-table-column>
+        <el-table-column prop="lastTime" label="会员最近登录时间" min-width="180"></el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="ipPag.page" v-model:page-size="ipPag.size" :total="ipRows.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+  </template>
+</div>
+</template>
+
+<!-- ══════════ 黑名单 ══════════ -->
+<template id="risk-blacklist-tpl">
+<div class="page">
+  <div class="qs-status-bar">
+    <span v-for="t in tabs" :key="t.key" class="qs-status-tab" :class="{active:tab===t.key}" @click="switchTab(t.key)">{{ t.label }}</span>
+  </div>
+
+  <el-card shadow="never" class="filter-card">
+    <el-form :model="filters" label-position="right" label-width="auto" size="default" class="filter-form">
+      <el-row :gutter="12" class="filter-row">
+        <el-col :span="8" v-if="cat==='member'"><el-form-item label="会员ID"><el-input v-model="filters.keyword" placeholder="会员ID或账号信息" clearable/></el-form-item></el-col>
+        <template v-else>
+          <el-col :span="8"><el-form-item :label="cfg.keyLabel"><el-input v-model="filters.keyword" placeholder="请输入" clearable/></el-form-item></el-col>
+          <el-col :span="8"><el-form-item label="限制类型"><select v-model="filters.limitType" class="f-sel"><option value="">全部</option><option value="注册">注册</option><option value="登录">登录</option></select></el-form-item></el-col>
+        </template>
+      </el-row>
+      <div class="filter-actions"><div></div><div class="filter-actions-right">
+        <el-button type="primary" :icon="Search" @click="search">查询</el-button>
+        <el-button :icon="Refresh" @click="reset">重置</el-button>
+        <el-button type="danger" plain :icon="Plus" @click="openAdd">新增</el-button>
+      </div></div>
+    </el-form>
+  </el-card>
+
+  <el-card shadow="never" class="table-card">
+    <!-- 会员类黑名单（登录/充值/提现） -->
+    <el-table v-if="cat==='member'" :data="paged" border stripe style="width:100%">
+      <el-table-column type="index" label="序号" width="70" align="center" :index="i=>(pag.page-1)*pag.size+i+1" fixed></el-table-column>
+      <el-table-column prop="memberId" label="会员ID" min-width="130"><template #default="{row}"><span v-if="row.memberId">{{ row.memberId }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+      <el-table-column prop="currency" label="币种" width="80" align="center"><template #default="{row}"><span v-if="row.currency">{{ row.currency }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+      <el-table-column :label="cfg.countLabel" width="120" align="center"><template #default="{row}">{{ row.count }}</template></el-table-column>
+      <el-table-column :label="cfg.amountLabel" width="160" align="right"><template #default="{row}">{{ row.amount }}</template></el-table-column>
+      <el-table-column v-if="cfg.hasDiff" prop="diff" label="充/提差额" width="130" align="right"></el-table-column>
+      <el-table-column prop="balance" label="总余额" width="120" align="right"></el-table-column>
+      <el-table-column prop="regIp" label="注册IP" min-width="140"><template #default="{row}"><span v-if="row.regIp">{{ row.regIp }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+      <el-table-column prop="remark" label="备注" min-width="140"><template #default="{row}"><span v-if="row.remark">{{ row.remark }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+      <el-table-column label="操作" width="140" align="center" fixed="right">
+        <template #default="{row}"><div class="op-cell">
+          <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="danger" size="small" @click="doDelete(row)">删除</el-button>
+        </div></template>
+      </el-table-column>
+      <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+    </el-table>
+
+    <!-- IP / 设备黑名单 -->
+    <el-table v-else :data="paged" border stripe style="width:100%">
+      <el-table-column type="index" label="序号" width="70" align="center" :index="i=>(pag.page-1)*pag.size+i+1" fixed></el-table-column>
+      <el-table-column prop="target" :label="cfg.keyLabel" min-width="180"></el-table-column>
+      <el-table-column label="限制类型" width="140" align="center"><template #default="{row}"><el-tag v-for="t in row.types" :key="t" size="small" effect="plain" style="margin-right:4px">{{ t }}</el-tag><span v-if="!row.types||!row.types.length" class="cell-dash">—</span></template></el-table-column>
+      <el-table-column prop="remark" label="备注" min-width="160"><template #default="{row}"><span v-if="row.remark">{{ row.remark }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+      <el-table-column prop="operator" label="操作人" width="120"></el-table-column>
+      <el-table-column prop="createTime" label="操作时间" min-width="170"></el-table-column>
+      <el-table-column label="操作" width="140" align="center" fixed="right">
+        <template #default="{row}"><div class="op-cell">
+          <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="danger" size="small" @click="doDelete(row)">删除</el-button>
+        </div></template>
+      </el-table-column>
+      <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+    </el-table>
+
+    <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size" :total="curRows.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+  </el-card>
+
+  <!-- 新增弹窗 -->
+  <el-dialog v-model="addDlg.visible" :title="'添加'+curTabLabel" width="500px" align-center :close-on-click-modal="false">
+    <el-form class="dlg-form" label-width="90px" label-position="right">
+      <!-- 会员类：会员ID + 查询 -->
+      <el-form-item v-if="cat==='member'" label="会员ID" required>
+        <div style="display:flex;gap:8px;width:100%">
+          <el-input v-model="addDlg.form.target" placeholder="请输入会员ID" style="flex:1"/>
+          <el-button type="primary" @click="ElMessage.success('已查询会员信息')">查询</el-button>
+        </div>
+      </el-form-item>
+      <!-- IP/设备类：标识 + 限制类型 -->
+      <template v-else>
+        <el-form-item :label="cfg.keyLabel" required><el-input v-model="addDlg.form.target" placeholder="请输入"/></el-form-item>
+        <el-form-item label="限制类型" required>
+          <el-checkbox-group v-model="addDlg.form.types">
+            <el-checkbox value="注册">注册</el-checkbox>
+            <el-checkbox value="登录">登录</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </template>
+      <el-form-item label="备注"><el-input v-model="addDlg.form.remark" type="textarea" :rows="3" placeholder="请输入备注（选填）"/></el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="addDlg.visible=false">取消</el-button>
+      <el-button type="primary" @click="submitAdd">确定</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 编辑弹窗 -->
+  <el-dialog v-model="editDlg.visible" :title="cat==='member'?'修改备注':('编辑'+curTabLabel)" width="500px" align-center :close-on-click-modal="false">
+    <el-form class="dlg-form" label-width="90px" label-position="right">
+      <el-form-item v-if="cat!=='member'" label="限制类型" required>
+        <el-checkbox-group v-model="editDlg.form.types">
+          <el-checkbox value="注册">注册</el-checkbox>
+          <el-checkbox value="登录">登录</el-checkbox>
+        </el-checkbox-group>
+      </el-form-item>
+      <el-form-item label="备注"><el-input v-model="editDlg.form.remark" type="textarea" :rows="3" placeholder="请输入备注"/></el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="editDlg.visible=false">取消</el-button>
+      <el-button type="primary" @click="submitEdit">确定</el-button>
+    </template>
+  </el-dialog>
+</div>
+</template>
+
+<!-- ══════════ 刷子监控 ══════════ -->
+<template id="risk-bonushunter-tpl">
+<div class="page">
+  <div class="qs-status-bar">
+    <span class="qs-status-tab" :class="{active:tab==='monitor'}" @click="tab='monitor'">同关联监控</span>
+    <span class="qs-status-tab" :class="{active:tab==='record'}" @click="tab='record'">同关联处罚记录</span>
+  </div>
+
+  <!-- ───── 同关联监控 ───── -->
+  <template v-if="tab==='monitor'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="mFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="关联类型"><select v-model="mFilters.relType" class="f-sel"><option value="">请选择</option><option v-for="t in REL_TYPES" :key="t" :value="t">{{ t }}</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="操作状态"><select v-model="mFilters.status" class="f-sel"><option value="">请选择</option><option v-for="p in PUNISH_ALL" :key="p" :value="p">{{ p }}</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="同关联信息"><el-input v-model="mFilters.info" placeholder="同关联信息" clearable/></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="同关联人数"><el-input v-model="mFilters.count" placeholder="同关联人数" clearable/></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="12"><el-form-item label="创建时间"><el-date-picker v-model="mFilters.range" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="mSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="mReset">重置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="table-card">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <el-dropdown trigger="click" @command="batchPunish">
+            <el-button plain :disabled="!mSelection.length">批量操作<span class="btn-arrow">▾</span></el-button>
+            <template #dropdown><el-dropdown-menu>
+              <el-dropdown-item v-for="p in PUNISH_ACTIONS" :key="p" :command="p">{{ p }}</el-dropdown-item>
+            </el-dropdown-menu></template>
+          </el-dropdown>
+          <span style="margin-left:10px;color:#6b7280;font-size:12px;">已选择 {{ mSelection.length }} 条数据</span>
+        </div>
+        <div class="toolbar-right">
+          <el-button type="primary" @click="ruleDlg.visible=true">默认自动规则</el-button>
+        </div>
+      </div>
+      <el-table :data="mPaged" border stripe style="width:100%" @selection-change="r=>mSelection=r">
+        <el-table-column type="selection" width="42" align="center" fixed></el-table-column>
+        <el-table-column prop="relType" label="关联类型" width="120" align="center"></el-table-column>
+        <el-table-column prop="info" label="具体关联信息" min-width="260"></el-table-column>
+        <el-table-column label="同关联人数" width="120" align="center"><template #default="{row}"><span class="link-num" @click="openMembers(row)">{{ row.count }}</span></template></el-table-column>
+        <el-table-column label="当前处罚方式" width="170" align="center"><template #default="{row}"><el-tag size="small" effect="plain" :type="row.punish==='正常（默认不处罚）'?'success':'danger'">{{ row.punish }}</el-tag></template></el-table-column>
+        <el-table-column prop="operator" label="操作人" width="100" align="center"></el-table-column>
+        <el-table-column label="创建 / 更新时间" min-width="180">
+          <template #default="{row}"><div class="multi-cell"><div class="mc-row"><span class="mc-val">{{ row.createTime }}</span></div><div class="mc-row"><span class="mc-val mc-sub">{{ row.updateTime }}</span></div></div></template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" align="center" fixed="right">
+          <template #default="{row}"><div class="op-cell">
+            <el-dropdown trigger="click" @command="cmd=>changeRule(row,cmd)">
+              <el-button link type="primary" size="small">变更规则<el-icon style="margin-left:2px"><ArrowDown/></el-icon></el-button>
+              <template #dropdown><el-dropdown-menu>
+                <el-dropdown-item v-for="p in PUNISH_ACTIONS" :key="p" :command="p">{{ p }}</el-dropdown-item>
+              </el-dropdown-menu></template>
+            </el-dropdown>
+          </div></template>
+        </el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="mPag.page" v-model:page-size="mPag.size" :total="mFiltered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+
+    <!-- 默认自动规则弹窗 -->
+    <el-dialog v-model="ruleDlg.visible" title="默认自动规则" width="820px" align-center :close-on-click-modal="false">
+      <el-table :data="ruleDlg.rows" border style="width:100%">
+        <el-table-column prop="reason" label="关联原因" width="140"></el-table-column>
+        <el-table-column label="处罚触发值" width="140"><template #default="{row}"><el-input v-model="row.trigger" :disabled="row.scope==='all'" placeholder="2-9999"/></template></el-table-column>
+        <el-table-column label="处罚范围" min-width="220"><template #default="{row}"><el-select v-model="row.scope" style="width:100%"><el-option value="all" label="全部处罚"/><el-option value="over" label="只处罚超出此范围的账号"/></el-select></template></el-table-column>
+        <el-table-column label="处罚方式" min-width="220"><template #default="{row}"><el-select v-model="row.punish" style="width:100%"><el-option v-for="p in PUNISH_ALL" :key="p" :value="p" :label="p"/></el-select></template></el-table-column>
+      </el-table>
+      <div class="rule-tip">
+        处罚范围：<br>
+        全部处罚——若选择全部处罚，系统不考虑处罚触发值<br>
+        只处罚超出此范围的账号——若选择超出范围，则需要填写处罚触发值，只处罚超出触发值<br>
+        输入范围值：2-9999
+      </div>
+      <template #footer>
+        <el-button @click="ruleDlg.visible=false">取消</el-button>
+        <el-button type="primary" @click="saveRule">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 同关联会员列表弹窗 -->
+    <el-dialog v-model="memDlg.visible" title="同关联会员" width="680px" align-center :close-on-click-modal="false">
+      <el-table :data="memDlg.rows" border stripe style="width:100%">
+        <el-table-column prop="memberId" label="会员ID" min-width="130"></el-table-column>
+        <el-table-column prop="account" label="会员账号" min-width="140"></el-table-column>
+        <el-table-column prop="regTime" label="注册时间" min-width="170"></el-table-column>
+        <el-table-column prop="lastLogin" label="最近登录" min-width="170"></el-table-column>
+      </el-table>
+      <template #footer><el-button @click="memDlg.visible=false">关闭</el-button></template>
+    </el-dialog>
+  </template>
+
+  <!-- ───── 同关联处罚记录 ───── -->
+  <template v-else>
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="rFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="账号信息"><el-input v-model="rFilters.account" placeholder="请输入" clearable/></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="关联类型"><select v-model="rFilters.relType" class="f-sel"><option value="">请选择</option><option v-for="t in REL_TYPES" :key="t" :value="t">{{ t }}</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="操作类型"><select v-model="rFilters.opType" class="f-sel"><option value="">请选择</option><option v-for="p in PUNISH_ACTIONS" :key="p" :value="p">{{ p }}</option></select></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="12"><el-form-item label="创建时间"><el-date-picker v-model="rFilters.range" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="rSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="rReset">重置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="table-card">
+      <el-table :data="rPaged" border stripe style="width:100%">
+        <el-table-column type="selection" width="42" align="center" fixed></el-table-column>
+        <el-table-column prop="memberId" label="会员ID" width="100" align="center" fixed></el-table-column>
+        <el-table-column prop="account" label="会员账号" min-width="140"></el-table-column>
+        <el-table-column label="账号状态" width="90" align="center"><template #default="{row}"><el-tag size="small" :type="row.statusType==='normal'?'success':'danger'">{{ row.status }}</el-tag></template></el-table-column>
+        <el-table-column prop="vip" label="VIP等级" width="90" align="center"></el-table-column>
+        <el-table-column prop="level" label="会员层级" width="90" align="center"></el-table-column>
+        <el-table-column prop="regTime" label="注册时间" min-width="170"></el-table-column>
+        <el-table-column prop="recharge" label="充值金额" width="130" align="right"></el-table-column>
+        <el-table-column prop="withdraw" label="提现金额" width="130" align="right"></el-table-column>
+        <el-table-column prop="diff" label="充提差额" width="130" align="right"></el-table-column>
+        <el-table-column prop="relType" label="关联类型" width="110" align="center"></el-table-column>
+        <el-table-column prop="opType" label="操作类型" width="120" align="center"></el-table-column>
+        <el-table-column prop="operator" label="操作人" width="100" align="center"></el-table-column>
+        <el-table-column prop="opTime" label="操作时间" min-width="170"></el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="rPag.page" v-model:page-size="rPag.size" :total="rFiltered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+  </template>
+</div>
+</template>
+
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/locale/zh-cn.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+<script>
+const { createApp, ref, reactive, computed, defineComponent } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const REL_TYPES = ['同上级代理','同浏览器标识','同IP','同设备号'];
+const PUNISH_ACTIONS = ['限制登录','限制充值','限制提现','修改层级','恢复正常','冻结','禁止进入游戏','禁止领取优惠'];
+const PUNISH_ALL = ['正常（默认不处罚）', ...PUNISH_ACTIONS];
+
+/* ───────── 关联查询 ───────── */
+const RiskRelated = defineComponent({
+  template:'#risk-related-tpl',
+  setup(){
+    const tab = ref('member');
+
+    // 查会员
+    const mDefF = ()=>({memberId:'', range:[]});
+    const mFilters = reactive(mDefF());
+    const mAll = ref([
+      {memberId:'100231 / vip_arjun', loginIp:'49.36.214.10', loginCount:128, ipLocation:'印度 / 德里', ipMemberCount:3, ipLastLogin:'2026-06-18 21:14:33', remark:''},
+      {memberId:'100488 / lucky_ravi', loginIp:'103.59.74.22', loginCount:56, ipLocation:'印度 / 孟买', ipMemberCount:1, ipLastLogin:'2026-06-19 08:02:10', remark:'多账号共用'},
+      {memberId:'100732 / sunny99', loginIp:'49.36.214.10', loginCount:9, ipLocation:'印度 / 德里', ipMemberCount:3, ipLastLogin:'2026-06-17 19:40:55', remark:''},
+    ]);
+    const mRows = ref([]);
+    const mPag = reactive({page:1,size:20});
+    const mCols = reactive([
+      {prop:'memberId',label:'会员ID',visible:true,required:true},
+      {prop:'loginIp',label:'登录ip',visible:true},
+      {prop:'loginCount',label:'登录次数',visible:true},
+      {prop:'ipLocation',label:'IP归属地',visible:true},
+      {prop:'ipMemberCount',label:'此IP登录过会员数',visible:true},
+      {prop:'ipLastLogin',label:'此IP最近登录时间',visible:true},
+      {prop:'remark',label:'备注',visible:false},
+    ]);
+    const mVis = (p)=>{ const c=mCols.find(x=>x.prop===p); return c&&c.visible; };
+    const mAllCols = computed(()=>mCols.every(c=>c.visible));
+    const mSomeCols = computed(()=>mCols.some(c=>c.visible)&&!mAllCols.value);
+    const mToggleAll = (v)=>mCols.forEach(c=>{ if(!c.required) c.visible=v; });
+    const mPaged = computed(()=>{ const s=(mPag.page-1)*mPag.size; return mRows.value.slice(s,s+mPag.size); });
+    const mSearch = ()=>{ mRows.value = mAll.value.filter(r=>!mFilters.memberId || r.memberId.toLowerCase().includes(mFilters.memberId.toLowerCase())); mPag.page=1; ElMessage.success('查询条件已应用'); };
+    const mReset = ()=>{ Object.assign(mFilters,mDefF()); mRows.value=[]; mPag.page=1; };
+
+    // 导出弹窗
+    const exportFields = reactive([
+      {prop:'memberId',label:'会员ID',checked:true},
+      {prop:'loginIp',label:'登录ip',checked:false},
+      {prop:'loginCount',label:'登录次数',checked:true},
+      {prop:'ipLocation',label:'IP归属地',checked:true},
+      {prop:'ipMemberCount',label:'此IP登录过会员数',checked:true},
+      {prop:'ipLastLogin',label:'此IP最近登录时间',checked:true},
+      {prop:'remark',label:'备注',checked:true},
+    ]);
+    const exportDlg = reactive({visible:false});
+    const exportCheckedCount = computed(()=>exportFields.filter(f=>f.checked).length);
+    const openExport = ()=>{ exportDlg.visible=true; };
+    const exportAll = (v)=>exportFields.forEach(f=>f.checked=v);
+    const doExport = ()=>{ ElMessage.success('导出任务已提交（'+exportCheckedCount.value+' 个字段）'); exportDlg.visible=false; };
+
+    // 设备关联
+    const dDefF = ()=>({deviceNo:''});
+    const dFilters = reactive(dDefF());
+    const dAll = ref([
+      {deviceNo:'e150d0d5033b0a2313412a95088df8e0', regCount:4, loginCount:6, lastMember:'100231 / vip_arjun', lastTime:'2026-06-18 21:14:33'},
+      {deviceNo:'1fc91fc9eec29413195e1d6a26b98cda', regCount:1, loginCount:2, lastMember:'100488 / lucky_ravi', lastTime:'2026-06-19 08:02:10'},
+    ]);
+    const dRows = ref([]);
+    const dPag = reactive({page:1,size:20});
+    const dPaged = computed(()=>{ const s=(dPag.page-1)*dPag.size; return dRows.value.slice(s,s+dPag.size); });
+    const dSearch = ()=>{ dRows.value = dAll.value.filter(r=>!dFilters.deviceNo || r.deviceNo.includes(dFilters.deviceNo)); dPag.page=1; ElMessage.success('查询条件已应用'); };
+    const dReset = ()=>{ Object.assign(dFilters,dDefF()); dRows.value=[]; dPag.page=1; };
+
+    // IP关联
+    const ipDefF = ()=>({ip:''});
+    const ipFilters = reactive(ipDefF());
+    const ipAll = ref([
+      {ip:'49.36.214.10', regCount:3, loginCount:5, lastMember:'100231 / vip_arjun', lastTime:'2026-06-18 21:14:33'},
+      {ip:'103.59.74.22', regCount:1, loginCount:1, lastMember:'100488 / lucky_ravi', lastTime:'2026-06-19 08:02:10'},
+    ]);
+    const ipRows = ref([]);
+    const ipPag = reactive({page:1,size:20});
+    const ipPaged = computed(()=>{ const s=(ipPag.page-1)*ipPag.size; return ipRows.value.slice(s,s+ipPag.size); });
+    const ipSearch = ()=>{ ipRows.value = ipAll.value.filter(r=>!ipFilters.ip || r.ip.includes(ipFilters.ip)); ipPag.page=1; ElMessage.success('查询条件已应用'); };
+    const ipReset = ()=>{ Object.assign(ipFilters,ipDefF()); ipRows.value=[]; ipPag.page=1; };
+
+    const icons = ElementPlusIconsVue;
+    return { tab,
+      mFilters, mRows, mPag, mCols, mVis, mAllCols, mSomeCols, mToggleAll, mPaged, mSearch, mReset,
+      exportFields, exportDlg, exportCheckedCount, openExport, exportAll, doExport,
+      dFilters, dAll, dRows, dPag, dPaged, dSearch, dReset,
+      ipFilters, ipAll, ipRows, ipPag, ipPaged, ipSearch, ipReset,
+      ElMessage, Search:icons.Search, Refresh:icons.Refresh, Upload:icons.Upload, Operation:icons.Operation };
+  }
+});
+
+/* ───────── 黑名单 ───────── */
+const TAB_CFG = {
+  login:    {cat:'member', countLabel:'充/提次数', amountLabel:'充/提金额', hasDiff:true},
+  recharge: {cat:'member', countLabel:'充值次数', amountLabel:'充值金额', hasDiff:false},
+  withdraw: {cat:'member', countLabel:'提现次数', amountLabel:'提现金额', hasDiff:false},
+  ip:       {cat:'target', keyLabel:'IP地址'},
+  device:   {cat:'target', keyLabel:'设备号'},
+};
+const RiskBlacklist = defineComponent({
+  template:'#risk-blacklist-tpl',
+  setup(){
+    const tabs = [
+      {key:'login',label:'登录黑名单'},
+      {key:'recharge',label:'充值黑名单'},
+      {key:'withdraw',label:'提现黑名单'},
+      {key:'ip',label:'IP黑名单'},
+      {key:'device',label:'设备黑名单'},
+    ];
+    const tab = ref('login');
+    const store = reactive({
+      login:[ {memberId:'100488 / lucky_ravi', currency:'INR', count:'12 / 3', amount:'58,200.00 / 12,000.00', diff:'46,200.00', balance:'1,250.00', regIp:'103.59.74.22', remark:'多账号刷优惠'} ],
+      recharge:[],
+      withdraw:[ {memberId:'100732 / sunny99', currency:'INR', count:'8', amount:'35,000.00', balance:'320.00', regIp:'49.36.214.10', remark:'异常提现'} ],
+      ip:[ {target:'103.59.74.22', types:['登录'], remark:'撞库登录', operator:'jamie', createTime:'2026-06-10 14:30:00'} ],
+      device:[ {target:'e150d0d5033b0a2313412a95088df8e0', types:['注册','登录'], remark:'多账号刷优惠', operator:'jamie', createTime:'2026-06-12 09:15:00'} ],
+    });
+    const filters = reactive({keyword:'', limitType:''});
+    const applied = reactive({keyword:'', limitType:''});
+    const pag = reactive({page:1,size:20});
+
+    const cfg = computed(()=>TAB_CFG[tab.value]);
+    const cat = computed(()=>cfg.value.cat);
+    const curTabLabel = computed(()=>tabs.find(t=>t.key===tab.value).label);
+
+    const curRows = computed(()=>{
+      let rows = store[tab.value];
+      const kw = applied.keyword.trim().toLowerCase();
+      if(kw) rows = rows.filter(r=> (cat.value==='member' ? (r.memberId||'') : (r.target||'')).toLowerCase().includes(kw));
+      if(cat.value==='target' && applied.limitType) rows = rows.filter(r=>(r.types||[]).includes(applied.limitType));
+      return rows;
+    });
+    const paged = computed(()=>{ const s=(pag.page-1)*pag.size; return curRows.value.slice(s,s+pag.size); });
+
+    const switchTab = (k)=>{ tab.value=k; filters.keyword=''; filters.limitType=''; applied.keyword=''; applied.limitType=''; pag.page=1; };
+    const search = ()=>{ Object.assign(applied,filters); pag.page=1; ElMessage.success('查询条件已应用'); };
+    const reset = ()=>{ filters.keyword=''; filters.limitType=''; Object.assign(applied,{keyword:'',limitType:''}); pag.page=1; };
+
+    // 新增
+    const addDlg = reactive({visible:false, form:{target:'', types:[], remark:''}});
+    const openAdd = ()=>{ addDlg.form={target:'', types:[], remark:''}; addDlg.visible=true; };
+    const submitAdd = ()=>{
+      if(!addDlg.form.target.trim()){ ElMessage.warning('请填写'+(cat.value==='member'?'会员ID':cfg.value.keyLabel)); return; }
+      if(cat.value==='target' && !addDlg.form.types.length){ ElMessage.warning('请选择限制类型'); return; }
+      if(cat.value==='member'){
+        const blank = cfg.value.hasDiff
+          ? {memberId:addDlg.form.target, currency:'INR', count:'0 / 0', amount:'0.00 / 0.00', diff:'0.00', balance:'0.00', regIp:'', remark:addDlg.form.remark}
+          : {memberId:addDlg.form.target, currency:'INR', count:'0', amount:'0.00', balance:'0.00', regIp:'', remark:addDlg.form.remark};
+        store[tab.value].unshift(blank);
+      } else {
+        store[tab.value].unshift({target:addDlg.form.target, types:[...addDlg.form.types], remark:addDlg.form.remark, operator:'jamie', createTime:'2026-06-19 09:17:40'});
+      }
+      ElMessage.success('已加入'+curTabLabel.value); addDlg.visible=false;
+    };
+
+    // 编辑
+    const editDlg = reactive({visible:false, ref:null, form:{types:[], remark:''}});
+    const openEdit = (row)=>{ editDlg.ref=row; editDlg.form={types:[...(row.types||[])], remark:row.remark||''}; editDlg.visible=true; };
+    const submitEdit = ()=>{
+      if(cat.value!=='member' && !editDlg.form.types.length){ ElMessage.warning('请选择限制类型'); return; }
+      editDlg.ref.remark = editDlg.form.remark;
+      if(cat.value!=='member') editDlg.ref.types = [...editDlg.form.types];
+      ElMessage.success('已保存'); editDlg.visible=false;
+    };
+
+    const doDelete = (row)=> ElMessageBox.confirm('确认从'+curTabLabel.value+'移除该记录？','移除黑名单',{type:'warning'}).then(()=>{ const arr=store[tab.value]; const i=arr.indexOf(row); if(i>=0) arr.splice(i,1); ElMessage.success('已移除'); }).catch(()=>{});
+
+    const icons = ElementPlusIconsVue;
+    return { tabs, tab, cfg, cat, filters, pag, curTabLabel, curRows, paged, switchTab, search, reset, addDlg, openAdd, submitAdd, editDlg, openEdit, submitEdit, doDelete, ElMessage, Search:icons.Search, Refresh:icons.Refresh, Plus:icons.Plus };
+  }
+});
+
+/* ───────── 刷子监控 ───────── */
+const RiskBonusHunter = defineComponent({
+  template:'#risk-bonushunter-tpl',
+  setup(){
+    const tab = ref('monitor');
+
+    // 同关联监控
+    const mDefF = ()=>({relType:'', status:'', info:'', count:'', range:[]});
+    const mFilters = reactive(mDefF());
+    const mApplied = reactive(mDefF());
+    const mAll = ref([
+      {relType:'同设备号', info:'e150d0d5033b0a2313412a95088df8e0', count:10, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-21 19:14:00', updateTime:'2026-03-23 13:46:20'},
+      {relType:'同设备号', info:'1fc91fc9eec29413195e1d6a26b98cda', count:2, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-21 18:10:50', updateTime:'2026-03-21 18:10:50'},
+      {relType:'同设备号', info:'4dc038394e77188c0f41e3d74b8a9960', count:3, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-21 16:37:40', updateTime:'2026-03-21 16:37:40'},
+      {relType:'同设备号', info:'4dc038394e77188c0f41e3d74b8a9960', count:3, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-21 16:37:40', updateTime:'2026-03-21 16:37:40'},
+      {relType:'同设备号', info:'4dc038394e77188c0f41e3d74b8a9960', count:10, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-21 16:37:40', updateTime:'2026-03-21 17:11:00'},
+      {relType:'同设备号', info:'118e0700d6c9cc13cc5f60267f8e1ded', count:10, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-20 22:06:18', updateTime:'2026-03-21 16:25:51'},
+      {relType:'同IP', info:'49.36.214.10', count:3, punish:'限制登录', operator:'jamie', createTime:'2026-03-20 14:02:00', updateTime:'2026-03-21 09:30:00'},
+      {relType:'同浏览器标识', info:'ua-7f1c9b2e4a', count:5, punish:'正常（默认不处罚）', operator:'-', createTime:'2026-03-19 20:11:00', updateTime:'2026-03-19 20:11:00'},
+      {relType:'同上级代理', info:'agent_8841', count:4, punish:'禁止领取优惠', operator:'jamie', createTime:'2026-03-18 11:00:00', updateTime:'2026-03-20 10:15:00'},
+    ]);
+    const mSelection = ref([]);
+    const mPag = reactive({page:1,size:20});
+    const mFiltered = computed(()=>mAll.value.filter(r=>
+      (!mApplied.relType || r.relType===mApplied.relType) &&
+      (!mApplied.status || r.punish===mApplied.status) &&
+      (!mApplied.info || r.info.includes(mApplied.info)) &&
+      (!mApplied.count || String(r.count)===String(mApplied.count).trim())
+    ));
+    const mPaged = computed(()=>{ const s=(mPag.page-1)*mPag.size; return mFiltered.value.slice(s,s+mPag.size); });
+    const mSearch = ()=>{ Object.assign(mApplied,mFilters); mPag.page=1; ElMessage.success('查询条件已应用'); };
+    const mReset = ()=>{ Object.assign(mFilters,mDefF()); Object.assign(mApplied,mDefF()); mPag.page=1; };
+
+    const changeRule = (row,cmd)=> ElMessageBox.confirm('确认对该关联组执行「'+cmd+'」？','变更规则',{type:'warning'}).then(()=>{ row.punish = cmd==='恢复正常' ? '正常（默认不处罚）' : cmd; row.operator='jamie'; row.updateTime='2026-06-19 09:20:00'; ElMessage.success('已变更规则'); }).catch(()=>{});
+    const batchPunish = (cmd)=> ElMessageBox.confirm('确认对所选 '+mSelection.value.length+' 条执行「'+cmd+'」？','批量操作',{type:'warning'}).then(()=>{ mSelection.value.forEach(row=>{ row.punish = cmd==='恢复正常' ? '正常（默认不处罚）' : cmd; row.operator='jamie'; }); ElMessage.success('已批量处理'); }).catch(()=>{});
+
+    // 默认自动规则弹窗
+    const ruleDlg = reactive({visible:false, rows:[
+      {reason:'同上级代理', trigger:'4', scope:'all', punish:'正常（默认不处罚）'},
+      {reason:'同浏览器标识', trigger:'5', scope:'all', punish:'正常（默认不处罚）'},
+      {reason:'同IP', trigger:'3', scope:'all', punish:'正常（默认不处罚）'},
+      {reason:'同设备号', trigger:'4', scope:'all', punish:'正常（默认不处罚）'},
+    ]});
+    const saveRule = ()=>{ for(const r of ruleDlg.rows){ if(r.scope==='over'){ const n=Number(r.trigger); if(!(n>=2&&n<=9999)){ ElMessage.error('「'+r.reason+'」处罚触发值需在 2-9999 之间'); return; } } } ElMessage.success('默认自动规则已保存'); ruleDlg.visible=false; };
+
+    // 同关联会员
+    const memDlg = reactive({visible:false, rows:[]});
+    const openMembers = (row)=>{ memDlg.rows = Array.from({length:Math.min(row.count,10)},(_,i)=>({ memberId:100200+i, account:'player'+(100200+i), regTime:'2026-03-1'+(i%9)+' 10:0'+(i%9)+':00', lastLogin:'2026-06-1'+(i%9)+' 18:0'+(i%9)+':00' })); memDlg.visible=true; };
+
+    // 同关联处罚记录
+    const rDefF = ()=>({account:'', relType:'', opType:'', range:[]});
+    const rFilters = reactive(rDefF());
+    const rApplied = reactive(rDefF());
+    const rAll = ref([
+      {memberId:100488, account:'lucky_ravi', status:'冻结', statusType:'risk', vip:'VIP2', level:'L3', regTime:'2026-03-19 10:22:41', recharge:'58,200.00', withdraw:'12,000.00', diff:'46,200.00', relType:'同设备号', opType:'冻结', operator:'jamie', opTime:'2026-03-21 09:30:00'},
+      {memberId:100732, account:'sunny99', status:'正常', statusType:'normal', vip:'VIP1', level:'L2', regTime:'2026-04-02 16:51:09', recharge:'0.00', withdraw:'35,000.00', diff:'-35,000.00', relType:'同IP', opType:'限制提现', operator:'jamie', opTime:'2026-03-21 10:15:00'},
+    ]);
+    const rPag = reactive({page:1,size:20});
+    const rFiltered = computed(()=>rAll.value.filter(r=>
+      (!rApplied.account || r.account.includes(rApplied.account) || String(r.memberId).includes(rApplied.account)) &&
+      (!rApplied.relType || r.relType===rApplied.relType) &&
+      (!rApplied.opType || r.opType===rApplied.opType)
+    ));
+    const rPaged = computed(()=>{ const s=(rPag.page-1)*rPag.size; return rFiltered.value.slice(s,s+rPag.size); });
+    const rSearch = ()=>{ Object.assign(rApplied,rFilters); rPag.page=1; ElMessage.success('查询条件已应用'); };
+    const rReset = ()=>{ Object.assign(rFilters,rDefF()); Object.assign(rApplied,rDefF()); rPag.page=1; };
+
+    const icons = ElementPlusIconsVue;
+    return { tab, REL_TYPES, PUNISH_ALL, PUNISH_ACTIONS,
+      mFilters, mSelection, mPag, mFiltered, mPaged, mSearch, mReset, changeRule, batchPunish,
+      ruleDlg, saveRule, memDlg, openMembers,
+      rFilters, rPag, rFiltered, rPaged, rSearch, rReset,
+      ElMessage, Search:icons.Search, Refresh:icons.Refresh };
+  }
+});
+
+const app = createApp({
+  components:{ 'risk-related': RiskRelated, 'risk-blacklist': RiskBlacklist, 'risk-bonushunter': RiskBonusHunter },
+  setup(){
+    const VIEWS = ['risk-related','risk-blacklist','risk-bonushunter'];
+    const parseHash = ()=>{ const h=(location.hash||'').replace(/^#/,''); return VIEWS.includes(h)?h:'risk-related'; };
+    const view = ref(parseHash());
+    window.addEventListener('hashchange', ()=>{ view.value=parseHash(); });
+    return { view };
+  }
+});
+for(const [k,c] of Object.entries(ElementPlusIconsVue)) app.component(k,c);
+app.use(ElementPlus,{ locale:(window.ElementPlusLocaleZhCn||undefined) });
+app.mount('#app');
+</script>
+</body>
+</html>

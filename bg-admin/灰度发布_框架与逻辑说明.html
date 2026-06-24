@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>灰度发布 · 框架与逻辑说明</title>
+<style>
+  :root{
+    --blue:#409eff; --blue-d:#2b7fd6; --blue-bg:#eef2fb;
+    --green:#15a34a; --green-bg:#eef9f0;
+    --orange:#e6a23c; --orange-bg:#fdf6ec; --orange-d:#b8741a;
+    --red:#f56c6c; --red-bg:#fef0f0;
+    --ink:#1f2937; --gray:#5b6472; --gray-l:#8a93a3;
+    --line:#e5e7eb; --line-2:#ebeef5; --bg:#f5f7fa; --card:#fff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.7;font-size:15px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px;}
+
+  /* 顶部 */
+  .hero{
+    background:linear-gradient(120deg,#3b82f6,#409eff 60%,#22a7f0);
+    color:#fff;padding:46px 40px;border-radius:0 0 22px 22px;margin-bottom:30px;
+    box-shadow:0 8px 28px rgba(64,158,255,.25);
+  }
+  .hero h1{margin:0 0 10px;font-size:30px;letter-spacing:1px;}
+  .hero p{margin:0;opacity:.94;font-size:15px;max-width:760px}
+  .hero .tags{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+  .hero .tag{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    padding:4px 12px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px)}
+
+  /* 目录 */
+  .toc{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:30px;
+    display:flex;gap:6px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .toc a{font-size:13px;color:var(--gray);text-decoration:none;padding:5px 11px;border-radius:7px;transition:.15s}
+  .toc a:hover{background:var(--blue-bg);color:var(--blue-d)}
+
+  /* 区块 */
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:28px 30px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+  .sec-h{display:flex;align-items:center;gap:12px;margin:0 0 18px}
+  .sec-h .no{background:var(--blue);color:#fff;width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none}
+  .sec-h h2{margin:0;font-size:21px}
+  .lead{color:var(--gray);margin:-4px 0 18px;font-size:14.5px}
+
+  p{margin:10px 0}
+  .muted{color:var(--gray)}
+  b,strong{color:var(--ink)}
+
+  /* 通用卡片 */
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card2{border:1px solid var(--line);border-radius:11px;padding:16px 18px;background:#fff}
+  .card2 .t{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card2 .d{font-size:13.5px;color:var(--gray)}
+
+  /* 角色分工图 */
+  .roles{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .role{flex:1;min-width:200px;border:2px solid var(--blue);border-radius:12px;padding:16px 18px;background:var(--blue-bg)}
+  .role.mid{border-color:var(--green);background:var(--green-bg)}
+  .role.end{border-color:var(--orange);background:var(--orange-bg)}
+  .role .rt{font-weight:800;font-size:15px;margin-bottom:6px}
+  .role ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--gray)}
+  .role li{margin:3px 0}
+  .arrow-h{display:flex;align-items:center;justify-content:center;padding:0 6px;color:var(--blue);
+    font-size:22px;font-weight:700;min-width:48px;flex-direction:column}
+  .arrow-h small{font-size:11px;color:var(--gray-l);font-weight:400;line-height:1.2;text-align:center;margin-top:2px}
+
+  /* 流程步骤 */
+  .flow{counter-reset:step}
+  .step{display:flex;gap:14px;padding:13px 0;border-bottom:1px dashed var(--line-2)}
+  .step:last-child{border-bottom:none}
+  .step .n{counter-increment:step;flex:none;width:30px;height:30px;border-radius:50%;
+    background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .step .n::before{content:counter(step)}
+  .step .b{flex:1}
+  .step .b .st{font-weight:700;margin-bottom:2px}
+  .step .b .sd{font-size:13.5px;color:var(--gray)}
+  .pill{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;margin-right:5px;font-weight:600}
+  .pill.miss{background:var(--red-bg);color:var(--red)}
+  .pill.hit{background:var(--green-bg);color:var(--green)}
+  .pill.blue{background:var(--blue-bg);color:var(--blue-d)}
+
+  /* 状态机 */
+  .sm{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:center;margin:8px 0;text-align:center}
+  .node{border-radius:10px;padding:12px 8px;font-weight:700;font-size:14px;border:2px solid}
+  .n-wait{border-color:var(--gray-l);background:#f3f4f6;color:var(--gray)}
+  .n-gray{border-color:var(--blue);background:var(--blue-bg);color:var(--blue-d)}
+  .n-full{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+  .n-close{border-color:var(--orange);background:var(--orange-bg);color:var(--orange-d)}
+  .n-arch{border-color:var(--gray-l);background:#eceff3;color:var(--gray)}
+  .ar{color:var(--gray-l);font-size:20px;font-weight:700}
+  .ar small{display:block;font-size:10.5px;font-weight:400;color:var(--gray-l)}
+  .sm-note{font-size:13px;color:var(--gray);margin-top:6px}
+
+  /* 表格 */
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line-2);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:700;color:var(--gray)}
+  tr:nth-child(even) td{background:#fcfcfd}
+
+  /* 提示框 */
+  .note{border-left:4px solid var(--blue);background:var(--blue-bg);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14px}
+  .note.warn{border-color:var(--orange);background:var(--orange-bg)}
+  .note .nt{font-weight:700;margin-bottom:2px}
+
+  /* 待确认项 */
+  .confirm{border:1px solid var(--orange);border-left:5px solid var(--orange);border-radius:10px;
+    padding:15px 18px;margin:12px 0;background:linear-gradient(90deg,var(--orange-bg),#fff 80%)}
+  .confirm .ch{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;color:var(--orange-d)}
+  .confirm .ch .cn{background:var(--orange);color:#fff;width:22px;height:22px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+  .confirm .why{font-size:13.5px;color:var(--gray);margin:6px 0 0;padding-left:31px}
+  .confirm .opt{font-size:13px;margin:6px 0 0;padding-left:31px}
+  .confirm .opt b{color:var(--orange-d)}
+
+  /* 做/不做 */
+  .do2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .do-box{border-radius:11px;padding:16px 18px}
+  .do-yes{background:var(--green-bg);border:1px solid #b7e4c4}
+  .do-no{background:var(--red-bg);border:1px solid #f7c4c4}
+  .do-box .dh{font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .do-yes .dh{color:var(--green)} .do-no .dh{color:var(--red)}
+  .do-box ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--gray)}
+  .do-box li{margin:4px 0}
+
+  code{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:12.5px;
+    font-family:"SF Mono",Consolas,Monaco,monospace;color:#c0341d}
+  .kbd{font-family:"SF Mono",Consolas,Monaco,monospace;background:#1f2937;color:#e6edf3;
+    padding:10px 14px;border-radius:8px;font-size:13px;display:block;white-space:pre;overflow-x:auto;margin:10px 0}
+  footer{text-align:center;color:var(--gray-l);font-size:12.5px;margin-top:30px}
+
+  @media(max-width:760px){
+    .g3,.g2,.do2{grid-template-columns:1fr}
+    .sm{grid-template-columns:1fr;gap:6px}
+    .ar{transform:rotate(90deg)}
+    .roles{flex-direction:column}.arrow-h{transform:rotate(90deg);min-height:40px}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>灰度发布 · 框架与逻辑说明</h1>
+  <p>对齐整体框架与实现逻辑，供评审与开发可行性沟通。<b style="color:#fff">这不是详细 PRD</b> —— 字段级细节见《灰度发布功能需求文档 v2》，本页只讲框架、逻辑与争议点。</p>
+  <div class="tags">
+    <span class="tag">功能级灰度</span>
+    <span class="tag">不做环境隔离</span>
+    <span class="tag">灰度数据即正式数据</span>
+    <span class="tag">可推全量 · 可回滚</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <a href="#s1">① 是什么/边界</a>
+    <a href="#s2">② 角色分工</a>
+    <a href="#s3">③ 命中逻辑</a>
+    <a href="#s4">④ 互斥与重叠</a>
+    <a href="#s5">⑤ 状态机</a>
+    <a href="#s6">⑥ 外部依赖</a>
+    <a href="#s7">⑦ 待开发确认</a>
+    <a href="#s8">⑧ 第一期范围</a>
+  </nav>
+
+  <!-- 1 -->
+  <section id="s1">
+    <div class="sec-h"><span class="no">1</span><h2>这是什么 / 边界</h2></div>
+    <p class="lead">一句话：给单个新功能做开关式灰度——先放给一部分会员用，验证没问题再推全量，出问题可一键回滚。</p>
+    <div class="do2">
+      <div class="do-box do-yes">
+        <div class="dh">✅ 灰度控制什么</div>
+        <ul>
+          <li>功能是否展示</li>
+          <li>入口是否开放</li>
+          <li>走新版还是旧版逻辑</li>
+        </ul>
+      </div>
+      <div class="do-box do-no">
+        <div class="dh">⛔ 明确不做</div>
+        <ul>
+          <li>环境隔离 / 数据库隔离</li>
+          <li>会员隔离 / 订单隔离</li>
+          <li>APP 版本控制 / 复杂规则表达式</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">
+      <div class="nt">🔑 设计前提</div>
+      “不做环境隔离、灰度数据即正式数据” 是整套设计的根。正因为如此，资金链路才需要「来源标识」字段（见第 6 节），用来回滚后追溯。
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="s2">
+    <div class="sec-h"><span class="no">2</span><h2>角色分工（谁干什么）</h2></div>
+    <p class="lead">最关键的一条分界：「谁命中」全部由<b>后端</b>判断，前端只消费结果。规则统一、避免前端各自实现导致不一致。</p>
+    <div class="roles">
+      <div class="role">
+        <div class="rt">🖥️ 后台管理端<br><span style="font-weight:400;font-size:12px;color:var(--gray)">（本模块主体）</span></div>
+        <ul><li>创建灰度功能</li><li>配置投放规则</li><li>流转状态（含回退）</li></ul>
+      </div>
+      <div class="arrow-h">→<small>配置</small></div>
+      <div class="role mid">
+        <div class="rt">⚙️ 后端服务<br><span style="font-weight:400;font-size:12px;color:var(--gray)">规则匹配引擎</span></div>
+        <ul><li>按会员属性算命中</li><li>处理互斥裁决</li><li>维护配置版本号</li></ul>
+      </div>
+      <div class="arrow-h">→<small>返回<br>Key列表</small></div>
+      <div class="role end">
+        <div class="rt">📱 会员端 / 前端</div>
+        <ul><li>拿后端返回的 Key</li><li>判断展示新版/旧版</li><li>不算规则、不碰互斥</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="s3">
+    <div class="sec-h"><span class="no">3</span><h2>核心逻辑：会员怎么算「命中」</h2></div>
+    <p class="lead">后端对每个灰度功能，按固定顺序判断当前会员是否命中。顺序不能乱。</p>
+    <div class="flow">
+      <div class="step"><div class="n"></div><div class="b">
+        <div class="st">先看功能状态</div>
+        <div class="sd"><span class="pill miss">不命中</span>已关闭 / 已归档 / 未生效 &nbsp;·&nbsp; <span class="pill hit">全命中</span>已全量 &nbsp;·&nbsp; <span class="pill blue">继续判断</span>灰度中</div>
+      </div></div>
+      <div class="step"><div class="n"></div><div class="b">
+        <div class="st">白名单优先</div>
+        <div class="sd">会员在白名单里 → 直接命中，标记「白名单命中」，<b>不再看普通规则</b>。</div>
+      </div></div>
+      <div class="step"><div class="n"></div><div class="b">
+        <div class="st">普通规则（两步，顺序不能反）</div>
+        <div class="sd">① 硬条件准入（<b>AND，必须全满足</b>）：VIP 等级 + 会员标签 + 注册时间段<br>
+        ② 百分比放量：在「通过①的人」里，按 hash 分流取一定比例 → 命中标记「普通命中」</div>
+      </div></div>
+      <div class="step"><div class="n"></div><div class="b">
+        <div class="st">收集 + 互斥裁决</div>
+        <div class="sd">汇总该会员命中的所有功能 Key（带命中方式标记）→ 处理互斥组（见第 4 节）。</div>
+      </div></div>
+      <div class="step"><div class="n"></div><div class="b">
+        <div class="st">返回最终命中的功能 Key 列表</div>
+        <div class="sd">前端拿这个列表展示新版。</div>
+      </div></div>
+    </div>
+
+    <div class="note">
+      <div class="nt">📊 运营要理解的口径</div>
+      百分比是「<b>目标人群内</b>的百分比」，不是全站。<br>
+      例：<code>VIP3以上 + 近30天注册 + 20%</code> → 命中数 ≈ 满足前两个条件的人数 × 20%。
+    </div>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card2"><div class="t">🔒 分流要稳定</div><div class="d">同一会员同一功能结果恒定——不能刷新一下新版、刷新一下旧版。</div></div>
+      <div class="card2"><div class="t">📈 放量不掉人</div><div class="d">从 10% 提到 30%，原来命中的人继续命中，不被甩出。</div></div>
+    </div>
+    <span class="kbd">实现：hash(会员ID + "_" + 功能Key) % 100  <  放量百分比
+（拼功能Key做"盐"，保证各功能独立分流，互不串号）</span>
+  </section>
+
+  <!-- 4 -->
+  <section id="s4">
+    <div class="sec-h"><span class="no">4</span><h2>互斥与重叠</h2></div>
+    <div class="grid g2">
+      <div class="card2" style="border-color:#b7e4c4;background:var(--green-bg)">
+        <div class="t" style="color:var(--green)">✅ 允许重叠</div>
+        <div class="d">一个会员可同时命中多个<b>不冲突</b>的功能（如 新版充值页 + 新版活动中心），各自独立判断。</div>
+      </div>
+      <div class="card2" style="border-color:#f7c4c4;background:var(--red-bg)">
+        <div class="t" style="color:var(--red)">⛔ 必须互斥</div>
+        <div class="d">多个版本控制<b>同一页面/入口/流程</b>（如充值页 V2 与 V3），不能让同一会员同时命中两个。</div>
+      </div>
+    </div>
+    <p style="margin-top:16px"><b>互斥裁决规则</b>（配到同一「互斥组」，后端只保留一个）：</p>
+    <span class="kbd">同一互斥组内命中多个时：
+  ① 先看命中方式：白名单命中  >  普通命中
+  ② 同一命中方式内：优先级数字越大越优先</span>
+    <div class="note warn">
+      <div class="nt">💡 举例</div>
+      测试号被白名单锁到 V2、同时普通命中 V3 → <b>返回 V2</b>。白名单本意就是把测试号固定到指定版本。<br>
+      <span class="muted">前端不碰互斥，后端裁决完只给前端一个干净的 Key 列表。</span>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="s5">
+    <div class="sec-h"><span class="no">5</span><h2>状态机（生命周期）</h2></div>
+    <p class="lead">核心价值在于 <b>能反向流转</b>——出问题能退。开发设计状态机时不能只做单向。</p>
+    <div class="sm">
+      <div class="node n-wait">未生效</div>
+      <div class="ar">→<small>到生效时间</small></div>
+      <div class="node n-gray">灰度中</div>
+      <div class="ar">→<small>推全量</small></div>
+      <div class="node n-full">已全量</div>
+    </div>
+    <div class="sm" style="margin-top:10px">
+      <div></div><div></div>
+      <div class="ar" style="transform:rotate(90deg)">↕<small style="transform:rotate(-90deg);white-space:nowrap">回退/重开</small></div>
+      <div></div>
+      <div class="ar" style="transform:rotate(90deg)">↓<small style="transform:rotate(-90deg)">关闭</small></div>
+    </div>
+    <div class="sm" style="margin-top:10px">
+      <div></div><div></div>
+      <div class="node n-close">已关闭</div>
+      <div class="ar">→<small>归档</small></div>
+      <div class="node n-arch">已归档</div>
+    </div>
+
+    <table style="margin-top:18px">
+      <tr><th style="width:120px">状态</th><th>含义</th></tr>
+      <tr><td><b>未生效</b></td><td>没到生效时间，全员旧版</td></tr>
+      <tr><td><b style="color:var(--blue-d)">灰度中</b></td><td>按规则判断命中</td></tr>
+      <tr><td><b style="color:var(--green)">已全量</b></td><td>全员新版</td></tr>
+      <tr><td><b style="color:var(--orange-d)">已关闭</b></td><td>全员旧版（不删已产生数据）</td></tr>
+      <tr><td><b>已归档</b></td><td>退出灰度生命周期，不再判断</td></tr>
+    </table>
+    <div class="note warn">
+      <div class="nt">⚠️ 高风险操作</div>
+      推全量 / 关闭 / 全量回退 —— 一律<b>二次确认 + 权限控制</b>（建议只开放给管理员或指定负责人）。
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="s6">
+    <div class="sec-h"><span class="no">6</span><h2>对外部系统的依赖</h2></div>
+    <p class="lead">以下不属于本模块自己实现，但要协同对齐。</p>
+    <table>
+      <tr><th style="width:150px">依赖</th><th>说明</th><th style="width:140px">归属</th></tr>
+      <tr>
+        <td><b>全站操作日志</b></td>
+        <td>灰度的关键操作（新建/改规则/改状态/推全量/关闭/归档）接入<b>全站统一操作日志</b>，本模块<b>不单独建日志功能</b>，只需保证操作可被记录、可按功能 Key 检索。</td>
+        <td>🔗 微奶（全站日志）</td>
+      </tr>
+      <tr>
+        <td><b>资金链路来源标识</b></td>
+        <td>因不做环境隔离，灰度产生的就是正式数据。充值/投注/账变/活动领取等核心表需加来源标识字段（功能 Key + 版本），保证回滚后可追溯、可对账。</td>
+        <td>各业务后端 / DBA</td>
+      </tr>
+      <tr>
+        <td><b>前端缓存刷新</b></td>
+        <td>后端维护全局配置版本号，配置一变 +1；前端比对版本号或 <code>TTL≤5min</code> 兜底重拉，保证后台改完最长 5 分钟全端生效。</td>
+        <td>前端框架</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 7 -->
+  <section id="s7">
+    <div class="sec-h" style="--blue:var(--orange)"><span class="no" style="background:var(--orange)">7</span><h2>⚠️ 待开发确认项（沟通重点）</h2></div>
+    <p class="lead">工作量大、跨团队、或方案有多选的点。建议对每项让开发给「<b>能做 / 要改方案 / 工作量</b>」三选一，避免来回拉扯。</p>
+
+    <div class="confirm">
+      <div class="ch"><span class="cn">1</span>hash 分流算法 · 跨语言一致</div>
+      <div class="why">前后端语言不同，要保证同一会员算出同一 slot，否则新旧版来回跳。</div>
+      <div class="opt"><b>倾向：</b>统一选 CRC32 或 MurmurHash；由谁提供一致实现待定。</div>
+    </div>
+    <div class="confirm">
+      <div class="ch"><span class="cn">2</span>核心资金表加「来源标识」字段</div>
+      <div class="why">要动充值/投注/账变等核心表结构，涉及历史数据兼容、对账、DBA —— 最容易被顶回来的点。</div>
+      <div class="opt"><b>倾向：</b>新字段必须可空、向前兼容；全表加 or 只加关键表待定。</div>
+    </div>
+    <div class="confirm">
+      <div class="ch"><span class="cn">3</span>全局版本号 + TTL 缓存刷新</div>
+      <div class="why">涉及前端架构改造和接口埋版本号，工作量集中在前端。</div>
+      <div class="opt"><b>倾向：</b>第一期「版本号 + TTL≤5min」；WebSocket 即时下发列为二期。</div>
+    </div>
+    <div class="confirm">
+      <div class="ch"><span class="cn">4</span>灰度接口在登录关键链路上</div>
+      <div class="why">接口慢会拖累登录/核心页，需后端做缓存方案。</div>
+      <div class="opt"><b>倾向：</b>配置内存缓存 + 会员命中结果短时缓存，方案待后端定。</div>
+    </div>
+    <div class="confirm">
+      <div class="ch"><span class="cn">5</span>百分比「缩量」的处理</div>
+      <div class="why">放量比例调低会把部分会员甩回旧版，属敏感操作。</div>
+      <div class="opt"><b>倾向：</b>后台二次确认 + 明确提示影响范围。</div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="s8">
+    <div class="sec-h"><span class="no">8</span><h2>第一期范围（防蔓延）</h2></div>
+    <div class="do2">
+      <div class="do-box do-yes">
+        <div class="dh">✅ 第一期做</div>
+        <ul>
+          <li>功能级灰度</li>
+          <li>5 类投放规则：白名单 / VIP / 标签 / 注册时间 / 百分比</li>
+          <li>互斥组 + 优先级</li>
+          <li>状态流转（含反向回退）</li>
+          <li>推全量 / 关闭 / 归档</li>
+          <li>资金来源标识 + 版本号缓存</li>
+        </ul>
+      </div>
+      <div class="do-box do-no">
+        <div class="dh">⛔ 第一期不做</div>
+        <ul>
+          <li>环境 / 数据隔离</li>
+          <li>未登录用户灰度</li>
+          <li>复杂规则表达式（OR / 自定义组合）</li>
+          <li>灰度数据单独结算</li>
+          <li>WebSocket 即时下发</li>
+          <li>误归档恢复</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    配套：详细字段与接口见《灰度发布功能需求文档 v2》　·　操作日志字段见《灰度操作日志交接说明》（待整理给微奶）
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>风控管理 · 功能PRD（全状态平铺）</title>
+<style>
+  :root{
+    --primary:#409eff;--primary-d:#2f6fe0;--danger:#f56c6c;--green:#15a34a;
+    --text:#1f2733;--reg:#5b6472;--sec:#8a94a6;--ph:#b6bdc9;
+    --border:#dcdfe6;--bl:#ebeef5;--bg:#eef1f6;--radius:4px;
+    --note:#fff8d6;--note-b:#f0d97a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;font-size:13px;line-height:1.6}
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 80px}
+
+  .doc-head{background:linear-gradient(120deg,#2f6fe0,#409eff);color:#fff;border-radius:10px;padding:24px 28px;box-shadow:0 8px 26px rgba(64,158,255,.28)}
+  .doc-head h1{margin:0 0 6px;font-size:23px;letter-spacing:1px}
+  .doc-head .sub{opacity:.92;font-size:13px}
+  .doc-meta{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:14px;font-size:12.5px}
+  .doc-meta b{opacity:.8;font-weight:500;margin-right:4px}
+
+  section{margin-top:30px}
+  .sec-h{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+  .sec-h .no{background:var(--primary);color:#fff;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:0 0 26px}
+  .sec-h h2{margin:0;font-size:17px}
+  .sub-h{font-size:14px;font-weight:700;color:var(--primary-d);margin:20px 0 10px;padding-left:10px;border-left:3px solid var(--primary)}
+
+  .card{background:#fff;border:1px solid var(--bl);border-radius:8px;padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  p.lead{margin:0 0 8px;color:var(--reg)}
+
+  table.spec{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+  table.spec th,table.spec td{border:1px solid var(--bl);padding:8px 10px;text-align:left;vertical-align:top}
+  table.spec th{background:#eef2fb;color:#5b6b8c;font-weight:600;white-space:nowrap}
+  table.spec td.k{font-weight:600;white-space:nowrap;background:#fafbfd}
+  table.spec .req{color:var(--danger);font-weight:700}
+  .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;line-height:1.7}
+  .tag.r{background:#fdeeee;color:var(--danger)}
+  .tag.g{background:#eef9f0;color:#3a9d4a}
+  .tag.b{background:#ecf5ff;color:var(--primary-d)}
+
+  .note{background:var(--note);border:1px solid var(--note-b);border-radius:6px;padding:10px 13px;font-size:12.5px;color:#6b5b16;margin:10px 0}
+  .note b{color:#7a5a00}
+  .note ul{margin:6px 0 0;padding-left:18px}.note li{margin:3px 0}
+  ul.rules{margin:8px 0;padding-left:20px}ul.rules li{margin:5px 0;color:var(--reg)}ul.rules b{color:var(--text)}
+  .cap{font-size:12px;color:var(--sec);margin:0 0 10px;display:flex;align-items:center;gap:6px}
+  .cap .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);display:inline-block}
+
+  /* 截图级窗口框 */
+  .scr{border:1px solid #e0e4ea;border-radius:9px;background:#fff;overflow:hidden;box-shadow:0 10px 30px rgba(31,45,61,.12)}
+  .scr-bar{height:30px;background:#f5f7fa;border-bottom:1px solid #ebeef5;display:flex;align-items:center;gap:7px;padding:0 12px}
+  .scr-bar i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .scr-bar .r1{background:#ff5f56}.scr-bar .r2{background:#ffbd2e}.scr-bar .r3{background:#27c93f}
+  .scr-bar .t{margin-left:10px;font-size:11px;color:#9aa3b2}
+  .scr-body{padding:14px}
+
+  /* Element 风格控件 */
+  .ptabs{display:flex;gap:20px;border-bottom:1px solid #ebeef5;margin:-14px -14px 14px;padding:0 16px;flex-wrap:wrap}
+  .ptab{padding:11px 2px;color:var(--reg);border-bottom:2px solid transparent;font-size:13px}
+  .ptab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .flt{display:flex;flex-wrap:wrap;gap:11px 16px;align-items:center;margin-bottom:13px}
+  .it{display:flex;align-items:center;gap:6px;color:var(--reg);font-size:12.5px}
+  .inp,.selx,.dtb{height:30px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:12px;color:var(--ph);display:inline-flex;align-items:center;padding:0 10px}
+  .inp{min-width:118px}
+  .selx{min-width:104px;padding-right:22px;position:relative;color:var(--reg)}
+  .selx::after{content:'';position:absolute;right:9px;top:12px;border:4px solid transparent;border-top-color:#c0c4cc}
+  .dtb{gap:6px;color:#c0c4cc}.dtb svg{color:#c0c4cc}
+  .btns{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .bt{height:30px;border-radius:4px;padding:0 13px;display:inline-flex;align-items:center;gap:5px;font-size:12px;border:1px solid;font-weight:500}
+  .bt.bl{background:#eef4ff;color:var(--primary-d);border-color:#c3d8ff}
+  .bt.gn{background:#eef9f0;color:#3a9d4a;border-color:#bce6c4}
+  .bt.rd{background:#fdeeee;color:var(--danger);border-color:#f3b9b9}
+  .bt.og{background:#fff1e6;color:#e8801f;border-color:#ffcda3}
+  .bt.yl{background:#fef6e8;color:#d99326;border-color:#f5d99a}
+  .bt.solid{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .bt.plain{background:#fff;color:var(--reg);border-color:var(--border)}
+  .spacer{flex:1}
+  table.tbl{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid #ebeef5}
+  table.tbl th{background:#eef2fb;color:#5b6b8c;font-weight:600;padding:9px 6px;border-bottom:1px solid #e1e8f5;text-align:center;white-space:nowrap}
+  table.tbl td{padding:10px 6px;border-bottom:1px solid #ebeef5;text-align:center;color:var(--reg)}
+  table.tbl tr:last-child td{border-bottom:none}
+  table.tbl tr:hover td{background:#f5f9ff}
+  table.tbl td.l{text-align:left}
+  .mono{font-family:Consolas,Menlo,monospace}
+  .lk{color:var(--primary);cursor:default}
+  .bdg{display:inline-block;padding:1px 8px;border-radius:4px;font-size:11px;border:1px solid transparent}
+  .bdg.g{background:#f0f9eb;color:#67c23a;border-color:#e1f3d8}
+  .bdg.r{background:#fef0f0;color:#f56c6c;border-color:#fde2e2}
+  .bdg.gray{background:#f4f4f5;color:#909399;border-color:#e9e9eb}
+  .opi{display:inline-flex;gap:9px;align-items:center;justify-content:center}
+  .opi a{color:var(--primary)}.opi a.rd{color:var(--danger)}.opi a.wn{color:#e6a23c}
+  .cbx{width:13px;height:13px;border:1px solid #c0c4cc;border-radius:2px;display:inline-block;vertical-align:middle}
+
+  /* 弹窗 */
+  .dlg{border:1px solid #ebeef5;border-radius:9px;background:#fff;box-shadow:0 14px 44px rgba(31,45,61,.18);overflow:hidden}
+  .dlg-h{padding:14px 18px;border-bottom:1px solid #ebeef5;font-weight:600;display:flex;justify-content:space-between;color:var(--text);font-size:14px}
+  .dlg-h .x{color:#c0c4cc}
+  .dlg-b{padding:18px 20px}
+  .dlg-f{padding:13px 18px;border-top:1px solid #ebeef5;text-align:center}
+  .fm{display:flex;gap:12px;margin-bottom:13px;align-items:flex-start}
+  .fm .l{width:92px;flex:0 0 92px;text-align:right;color:var(--reg);padding-top:6px;font-size:12.5px}
+  .fm .l .q{color:var(--danger);margin-right:1px}
+  .fm .c{flex:1;min-width:0}
+  .ipt{height:32px;border:1px solid var(--border);border-radius:4px;padding:0 11px;font-size:12.5px;color:var(--ph);display:flex;align-items:center;background:#fff}
+  .sel2{height:32px;border:1px solid var(--border);border-radius:4px;padding:0 22px 0 11px;font-size:12.5px;color:var(--reg);display:inline-flex;align-items:center;background:#fff;position:relative;min-width:120px}
+  .sel2::after{content:'';position:absolute;right:9px;top:13px;border:4px solid transparent;border-top-color:#c0c4cc}
+  .rdo{display:inline-flex;align-items:center;gap:6px;margin-right:20px;color:var(--reg);font-size:12.5px}
+  .rdo .r{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);display:inline-block;position:relative}
+  .rdo.on{color:var(--text)}.rdo.on .r{border-color:var(--primary)}
+  .rdo.on .r::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--primary)}
+  .rdo.dis{opacity:.45}
+  .info{display:inline-flex;width:14px;height:14px;border:1px solid #c0c4cc;border-radius:50%;color:#c0c4cc;font-size:9px;align-items:center;justify-content:center;font-style:italic}
+  .cb{display:inline-flex;align-items:center;gap:6px;margin-right:16px;color:var(--reg);font-size:12.5px}
+  .cb .s{width:14px;height:14px;border-radius:3px;background:var(--primary);position:relative;display:inline-block}
+  .cb .s::after{content:'';width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);position:absolute;left:3px;top:3px}
+  .cb.off .s{background:#fff;border:1px solid var(--border)}
+  .cb.off .s::after{display:none}
+  .ta{border:1px solid var(--border);border-radius:4px;padding:8px 11px;font-size:12.5px;color:var(--ph);min-height:56px;background:#fff}
+  .subtbl{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid #ebeef5;margin-top:8px}
+  .subtbl th{background:#eef2fb;color:#5b6b8c;padding:7px;border-bottom:1px solid #e1e8f5;font-weight:600}
+  .subtbl td{padding:8px 7px;border-bottom:1px solid #ebeef5;text-align:center;color:var(--reg)}
+  .menu{width:150px;border:1px solid #ebeef5;border-radius:6px;box-shadow:0 8px 24px rgba(31,45,61,.16);overflow:hidden}
+  .menu .mi{padding:8px 14px;font-size:12.5px;color:var(--reg);border-bottom:1px solid #f3f5f8}
+  .menu .mi:last-child{border-bottom:none}
+  .menu .mi.rd{color:var(--danger)}
+  footer{margin-top:40px;text-align:center;color:var(--sec);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-head">
+    <h1>风控管理 · 功能 PRD</h1>
+    <div class="sub">关联查询 / 黑名单 / 刷子监控 三大模块的页面、字段定义、筛选校验与弹窗联动说明文档</div>
+    <div class="doc-meta">
+      <span><b>模块</b>风控管理 ▸ 关联查询 / 黑名单 / 刷子监控</span>
+      <span><b>适用市场</b>India（₹/+91）</span>
+      <span><b>版本</b>V1.0</span>
+      <span><b>日期</b>2026-06</span>
+    </div>
+  </div>
+
+  <!-- 1 概述 -->
+  <section>
+    <div class="sec-h"><span class="no">1</span><h2>功能概述</h2></div>
+    <div class="card">
+      <p class="lead">风控管理用于<b>识别多账号/撞库/刷优惠等异常行为并执行处置</b>。模块位于左侧栏「风控管理」分组，含三个子菜单（各为一个独立页面）：</p>
+      <table class="spec">
+        <tr><th style="width:96px">子功能</th><th>定位</th><th>子 Tab</th><th>核心动作</th></tr>
+        <tr><td class="k">关联查询</td><td>按维度查多账号关联，辅助人工研判</td><td>查会员 / 设备关联 / IP关联</td><td>查询、导出、表头显示设置（只读分析，无处置）</td></tr>
+        <tr><td class="k">黑名单</td><td>对会员/IP/设备做登录、充值、提现等维度的拉黑限制</td><td>登录 / 充值 / 提现 / IP / 设备 黑名单</td><td>查询、新增、编辑、删除（二次确认）</td></tr>
+        <tr><td class="k">刷子监控</td><td>按关联规则自动识别刷子团伙并批量处罚</td><td>同关联监控 / 同关联处罚记录</td><td>查询、默认自动规则、变更规则、批量操作</td></tr>
+      </table>
+      <div class="note"><b>说明：</b>关联查询是<b>纯只读分析页</b>（不改数据）；处置动作集中在黑名单（人工拉黑）与刷子监控（规则/批量处罚）。三者数据互通：关联查询查到的可疑账号 → 黑名单拉黑 / 刷子监控里查看团伙。</div>
+    </div>
+  </section>
+
+  <!-- 2 关联查询 -->
+  <section>
+    <div class="sec-h"><span class="no">2</span><h2>关联查询 · 列表页</h2></div>
+    <div class="card">
+      <p class="cap"><span class="dot"></span>页面示意（查会员）</p>
+      <div class="scr">
+        <div class="scr-bar"><i class="r1"></i><i class="r2"></i><i class="r3"></i><span class="t">风控管理 / 关联查询</span></div>
+        <div class="scr-body">
+          <div class="ptabs"><div class="ptab on">查会员</div><div class="ptab">设备关联</div><div class="ptab">IP关联</div></div>
+          <div class="flt">
+            <span class="it">会员ID <span class="inp">会员ID或账号信息</span></span>
+            <span class="it">登录时间 <span class="dtb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>2026-03-19 至 06-19</span></span>
+          </div>
+          <div class="btns">
+            <span class="bt bl">查询</span><span class="bt gn">重置</span><span class="bt yl">导出</span><span class="bt og">表头显示设置</span>
+          </div>
+          <table class="tbl">
+            <tr><th>序号</th><th>会员ID</th><th>登录ip</th><th>登录次数</th><th>IP归属地</th><th>此IP登录过会员数</th><th>此IP最近登录时间</th></tr>
+            <tr><td>1</td><td class="lk">100231 / vip_arjun</td><td class="mono">49.36.214.10</td><td>128</td><td>印度 / 德里</td><td class="lk">3</td><td>2026-06-18 21:14:33</td></tr>
+            <tr><td>2</td><td class="lk">100488 / lucky_ravi</td><td class="mono">103.59.74.22</td><td>56</td><td>印度 / 孟买</td><td class="lk">1</td><td>2026-06-19 08:02:10</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-h">三个 Tab 的查询模式</div>
+      <table class="spec">
+        <tr><th style="width:90px">Tab</th><th style="width:140px">筛选入口</th><th>用途</th><th>表格列</th></tr>
+        <tr><td class="k">查会员</td><td>会员ID + 登录时间</td><td>查某会员登录过的 IP 及该 IP 的关联面（多账号共用）</td><td>序号 / 会员ID / 登录ip / 登录次数 / IP归属地 / 此IP登录过会员数 / 此IP最近登录时间（+备注，默认隐藏）</td></tr>
+        <tr><td class="k">设备关联</td><td>设备号（下拉选择）</td><td>查某设备被多少账号注册/登录（团伙设备）</td><td>序号 / 设备号 / 使用此设备注册人数 / 使用此设备登录人数 / 此设备最近登录会员 / 会员最近登录时间</td></tr>
+        <tr><td class="k">IP关联</td><td>IP（下拉选择）</td><td>查某 IP 下注册/登录的账号数</td><td>序号 / ip / 此IP注册人数 / 此IP登录人数 / 此IP最近登录会员 / 会员最近登录时间</td></tr>
+      </table>
+
+      <div class="sub-h">筛选项说明</div>
+      <table class="spec">
+        <tr><th style="width:96px">筛选项</th><th style="width:96px">控件</th><th>取值 / 说明</th></tr>
+        <tr><td class="k">会员ID</td><td>输入框</td><td>占位「会员ID或账号信息」，按会员ID或账号匹配（查会员 Tab）。</td></tr>
+        <tr><td class="k">登录时间</td><td>日期范围</td><td>开始 ~ 结束，限定统计的登录时间窗（查会员 Tab）。</td></tr>
+        <tr><td class="k">设备号 / IP</td><td>下拉选择</td><td>占位「请选择」，支持搜索过滤（设备关联 / IP关联 Tab）。</td></tr>
+      </table>
+
+      <div class="sub-h">工具栏按钮说明</div>
+      <table class="spec">
+        <tr><th style="width:120px">按钮</th><th>点击行为</th></tr>
+        <tr><td class="k">查询</td><td>按当前筛选刷新列表。</td></tr>
+        <tr><td class="k">重置</td><td>清空筛选项、清空结果。</td></tr>
+        <tr><td class="k">导出</td><td>打开<b>导出弹窗</b>（勾选要导出的字段，§2 下方）。</td></tr>
+        <tr><td class="k">表头显示设置</td><td>打开<b>列显隐弹层</b>，自定义表格列的显示/隐藏（如「备注」列默认隐藏）。</td></tr>
+      </table>
+
+      <div class="grid2" style="margin-top:14px">
+        <div class="card" style="margin:0">
+          <p class="cap"><span class="dot"></span>导出弹窗</p>
+          <div class="dlg">
+            <div class="dlg-h"><span>导出</span><span class="x">✕</span></div>
+            <div class="dlg-b">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:12.5px">导出数据 (6)</b><span><span class="bt plain" style="height:26px">全选</span> <span class="bt plain" style="height:26px">清空</span></span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px">
+                <span class="cb"><span class="s"></span>会员ID</span><span class="cb off"><span class="s"></span>登录ip</span><span class="cb"><span class="s"></span>登录次数</span>
+                <span class="cb"><span class="s"></span>IP归属地</span><span class="cb"><span class="s"></span>此IP登录过会员数</span><span class="cb"><span class="s"></span>此IP最近登录时间</span>
+                <span class="cb"><span class="s"></span>备注</span>
+              </div>
+            </div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">导出</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <p class="cap"><span class="dot"></span>说明</p>
+          <ul class="rules">
+            <li><b>导出</b>：弹窗内勾选字段 → 标题「导出数据 (N)」实时反映勾选数；至少勾 1 项方可导出。</li>
+            <li><b>表头显示设置</b>：控制表格列显隐，与导出字段相互独立；主键列（会员ID）默认必显、不可关闭。</li>
+            <li>关联查询为<b>只读</b>：表格内「此IP登录过会员数」等数字可点开下钻（查看关联会员），但不提供任何处置按钮。</li>
+          </ul>
+          <div class="note">三个 Tab 各自独立的筛选与分页；切换 Tab 不带过滤值。分页统一 <b>[10/20/50/100]</b>，列表默认每页 50 条。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 黑名单 -->
+  <section>
+    <div class="sec-h"><span class="no">3</span><h2>黑名单 · 列表页</h2></div>
+    <div class="card">
+      <p class="lead">五个 Tab，按拉黑对象分<b>两类结构</b>：会员类（登录/充值/提现，带财务字段）与标识类（IP/设备，带限制类型）。</p>
+      <p class="cap" style="margin-top:12px"><span class="dot"></span>页面示意（登录黑名单）</p>
+      <div class="scr">
+        <div class="scr-bar"><i class="r1"></i><i class="r2"></i><i class="r3"></i><span class="t">风控管理 / 黑名单</span></div>
+        <div class="scr-body">
+          <div class="ptabs"><div class="ptab on">登录黑名单</div><div class="ptab">充值黑名单</div><div class="ptab">提现黑名单</div><div class="ptab">IP黑名单</div><div class="ptab">设备黑名单</div></div>
+          <div class="flt"><span class="it">会员ID <span class="inp">会员ID或账号信息</span></span></div>
+          <div class="btns"><span class="bt bl">查询</span><span class="bt gn">重置</span><span class="bt rd">＋ 新增</span></div>
+          <table class="tbl">
+            <tr><th>序号</th><th>会员ID</th><th>币种</th><th>充/提次数</th><th>充/提金额</th><th>充/提差额</th><th>总余额</th><th>注册IP</th><th>备注</th><th>操作</th></tr>
+            <tr><td>1</td><td class="lk">100488 / lucky_ravi</td><td>INR</td><td>12 / 3</td><td>58,200.00 / 12,000.00</td><td>46,200.00</td><td>1,250.00</td><td class="mono">103.59.74.22</td><td>多账号刷优惠</td><td class="opi"><a>编辑</a><a class="rd">删除</a></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-h">五 Tab 字段差异（核心）</div>
+      <table class="spec">
+        <tr><th style="width:96px">Tab</th><th style="width:60px">结构</th><th>表格列</th><th>筛选项</th></tr>
+        <tr><td class="k">登录黑名单</td><td>会员类</td><td>序号 / 会员ID / 币种 / <b>充/提次数</b> / <b>充/提金额</b> / <span class="tag b">充/提差额</span> / 总余额 / 注册IP / 备注 / 操作</td><td>会员ID</td></tr>
+        <tr><td class="k">充值黑名单</td><td>会员类</td><td>序号 / 会员ID / 币种 / 充值次数 / 充值金额 / 总余额 / 注册IP / 备注 / 操作（<b>无差额列</b>）</td><td>会员ID</td></tr>
+        <tr><td class="k">提现黑名单</td><td>会员类</td><td>序号 / 会员ID / 币种 / 提现次数 / 提现金额 / 总余额 / 注册IP / 备注 / 操作（<b>无差额列</b>）</td><td>会员ID</td></tr>
+        <tr><td class="k">IP黑名单</td><td>标识类</td><td>序号 / IP地址 / <b>限制类型</b> / 备注 / 操作人 / 操作时间 / 操作</td><td>IP地址 + 限制类型</td></tr>
+        <tr><td class="k">设备黑名单</td><td>标识类</td><td>序号 / 设备号 / <b>限制类型</b> / 备注 / 操作人 / 操作时间 / 操作</td><td>设备号 + 限制类型</td></tr>
+      </table>
+      <div class="note"><b>差异要点：</b>登录黑名单独有「充/提差额」列；充值/提现黑名单仅单边次数/金额、无差额；IP/设备黑名单不含财务字段，改为「限制类型 + 操作人 + 操作时间」，筛选多一个「限制类型」下拉（全部 / 注册 / 登录）。</div>
+
+      <div class="sub-h">列表字段说明（会员类）</div>
+      <table class="spec">
+        <tr><th style="width:96px">字段</th><th>说明</th></tr>
+        <tr><td class="k">会员ID</td><td>会员ID / 账号，蓝色可点（下钻会员详情）。空值显示 —。</td></tr>
+        <tr><td class="k">币种</td><td>会员账户币种（示例 INR）。</td></tr>
+        <tr><td class="k">充/提次数</td><td>登录黑名单为「充值次数 / 提现次数」；充值、提现黑名单为单边次数。</td></tr>
+        <tr><td class="k">充/提金额</td><td>同上，金额维度。</td></tr>
+        <tr><td class="k">充/提差额</td><td><b>仅登录黑名单</b>：充值金额 − 提现金额。</td></tr>
+        <tr><td class="k">总余额</td><td>会员当前账户余额。</td></tr>
+        <tr><td class="k">注册IP</td><td>会员注册时 IP。</td></tr>
+        <tr><td class="k">备注</td><td>拉黑原因备注。空值显示 —。</td></tr>
+        <tr><td class="k">操作</td><td>编辑、删除（删除走二次确认，§3 下方）。</td></tr>
+      </table>
+
+      <div class="sub-h">§3·新增弹窗（按 Tab 联动）</div>
+      <div class="grid2">
+        <div class="card">
+          <p class="cap"><span class="dot"></span>会员类 · 添加登录黑名单</p>
+          <div class="dlg">
+            <div class="dlg-h"><span>添加登录黑名单</span><span class="x">✕</span></div>
+            <div class="dlg-b">
+              <div class="fm"><div class="l"><span class="q">*</span>会员ID</div><div class="c"><div style="display:flex;gap:8px"><div class="ipt" style="flex:1">请输入会员ID</div><span class="bt solid" style="height:32px">查询</span></div></div></div>
+              <div class="fm"><div class="l">备注</div><div class="c"><div class="ta">请输入备注（选填）</div></div></div>
+            </div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">确定</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <p class="cap"><span class="dot"></span>标识类 · 添加IP黑名单</p>
+          <div class="dlg">
+            <div class="dlg-h"><span>添加IP黑名单</span><span class="x">✕</span></div>
+            <div class="dlg-b">
+              <div class="fm"><div class="l"><span class="q">*</span>IP</div><div class="c"><div class="ipt">请输入</div></div></div>
+              <div class="fm"><div class="l"><span class="q">*</span>限制类型</div><div class="c"><span class="cb off"><span class="s"></span>注册</span><span class="cb off"><span class="s"></span>登录</span></div></div>
+              <div class="fm"><div class="l">备注</div><div class="c"><div class="ta">请输入备注（选填）</div></div></div>
+            </div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">确定</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-h">§3·字段明细（新增 / 编辑弹窗）</div>
+      <div class="card">
+        <table class="spec">
+          <tr><th style="width:96px">字段</th><th style="width:110px">控件</th><th style="width:40px">必填</th><th style="width:80px">默认</th><th>取值 / 选项</th><th>校验规则</th><th>联动 · 显隐</th></tr>
+          <tr><td class="k">会员ID</td><td>输入框 + 查询</td><td><span class="req">是</span></td><td>空</td><td>会员ID / 账号</td><td>不可为空；点「查询」校验会员是否存在</td><td><b>仅会员类</b>（登录/充值/提现）显示</td></tr>
+          <tr><td class="k">IP / 设备号</td><td>输入框</td><td><span class="req">是</span></td><td>空</td><td>IP 地址 / 设备号</td><td>不可为空</td><td><b>仅标识类</b>（IP/设备）显示；标题随 Tab 为「IP」或「设备号」</td></tr>
+          <tr><td class="k">限制类型</td><td>多选复选</td><td><span class="req">是</span></td><td>空</td><td>注册 / 登录</td><td>至少勾 1 项</td><td><b>仅标识类</b>显示；编辑态同样可改</td></tr>
+          <tr><td class="k">备注</td><td>多行文本</td><td>否</td><td>空</td><td>拉黑原因</td><td>选填</td><td>全类型均有</td></tr>
+        </table>
+        <div class="note"><b>编辑态联动：</b>会员类点「编辑」→ 弹窗标题<b>「修改备注」，仅可改备注</b>（会员ID 不可改）；标识类点「编辑」→ 可改<b>限制类型 + 备注</b>。删除统一走 <b>ElMessageBox 二次确认</b>「确认从 XX 黑名单移除该记录？」。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 刷子监控 · 同关联监控 -->
+  <section>
+    <div class="sec-h"><span class="no">4</span><h2>刷子监控 · 同关联监控</h2></div>
+    <div class="card">
+      <p class="cap"><span class="dot"></span>页面示意</p>
+      <div class="scr">
+        <div class="scr-bar"><i class="r1"></i><i class="r2"></i><i class="r3"></i><span class="t">风控管理 / 刷子监控</span></div>
+        <div class="scr-body">
+          <div class="ptabs"><div class="ptab on">同关联监控</div><div class="ptab">同关联处罚记录</div></div>
+          <div class="flt">
+            <span class="it">关联类型 <span class="selx">请选择</span></span>
+            <span class="it">操作状态 <span class="selx">请选择</span></span>
+            <span class="it">同关联信息 <span class="inp">同关联信息</span></span>
+            <span class="it">同关联人数 <span class="inp" style="min-width:90px">同关联人数</span></span>
+            <span class="it">创建时间 <span class="dtb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>开始 至 结束</span></span>
+          </div>
+          <div class="btns"><span class="bt bl">查询</span><span class="bt gn">重置</span><span class="spacer"></span><span class="bt solid">默认自动规则</span></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span class="bt plain" style="height:28px">批量操作 ▾</span><span style="color:var(--sec);font-size:12px">已选择 0 条数据</span></div>
+          <table class="tbl">
+            <tr><th style="width:30px"><span class="cbx"></span></th><th>关联类型</th><th>具体关联信息</th><th>同关联人数</th><th>当前处罚方式</th><th>操作人</th><th>创建 / 更新时间</th><th>操作</th></tr>
+            <tr><td><span class="cbx"></span></td><td>同设备号</td><td class="l mono">e150d0d5033b0a2313412a95088df8e0</td><td class="lk">10</td><td><span class="bdg g">正常（默认不处罚）</span></td><td>-</td><td>2026-03-21 19:14:00<br>2026-03-23 13:46:20</td><td class="lk">变更规则 ▾</td></tr>
+            <tr><td><span class="cbx"></span></td><td>同IP</td><td class="l mono">49.36.214.10</td><td class="lk">3</td><td><span class="bdg r">限制登录</span></td><td>jamie</td><td>2026-03-20 14:02:00<br>2026-03-21 09:30:00</td><td class="lk">变更规则 ▾</td></tr>
+            <tr><td><span class="cbx"></span></td><td>同上级代理</td><td class="l mono">agent_8841</td><td class="lk">4</td><td><span class="bdg r">禁止领取优惠</span></td><td>jamie</td><td>2026-03-18 11:00:00<br>2026-03-20 10:15:00</td><td class="lk">变更规则 ▾</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-h">筛选项 / 列说明</div>
+      <table class="spec">
+        <tr><th style="width:110px">项 / 列</th><th>说明</th></tr>
+        <tr><td class="k">关联类型</td><td>下拉：同上级代理 / 同浏览器标识 / 同IP / 同设备号（对应自动规则的 4 类关联原因）。</td></tr>
+        <tr><td class="k">操作状态</td><td>下拉：正常（默认不处罚）/ 限制登录 / 限制充值 / 限制提现 / 修改层级 / 恢复正常 / 冻结 / 禁止进入游戏 / 禁止领取优惠。</td></tr>
+        <tr><td class="k">具体关联信息</td><td>命中的关联值（设备号 / IP / 代理ID / 浏览器标识）。</td></tr>
+        <tr><td class="k">同关联人数</td><td><b>蓝色可点</b> → 打开「同关联会员」列表弹窗（该关联组下的全部会员）。</td></tr>
+        <tr><td class="k">当前处罚方式</td><td>徽标：正常=绿；限制/冻结/禁止类=红。</td></tr>
+        <tr><td class="k">创建 / 更新时间</td><td>两行：创建时间 / 最后更新时间。</td></tr>
+        <tr><td class="k">操作 · 变更规则</td><td>下拉 8 个处罚动作（见下），选择后<b>二次确认</b>再变更该关联组处罚方式。</td></tr>
+        <tr><td class="k">批量操作</td><td>勾选多行后启用，对所选关联组批量执行某处罚动作（同样二次确认）。</td></tr>
+      </table>
+
+      <div class="sub-h">§4·默认自动规则弹窗（字段明细 + 联动）</div>
+      <div class="grid2">
+        <div class="card">
+          <p class="cap"><span class="dot"></span>弹窗示意</p>
+          <div class="dlg">
+            <div class="dlg-h"><span>默认自动规则</span><span class="x">✕</span></div>
+            <div class="dlg-b">
+              <table class="subtbl">
+                <tr><th>关联原因</th><th>处罚触发值</th><th>处罚范围</th><th>处罚方式</th></tr>
+                <tr><td>同上级代理</td><td><span class="ipt" style="height:26px;justify-content:center">4</span></td><td><span class="sel2" style="height:26px;min-width:90px">全部处罚</span></td><td><span class="sel2" style="height:26px;min-width:90px">正常（默认不处罚）</span></td></tr>
+                <tr><td>同浏览器标识</td><td><span class="ipt" style="height:26px;justify-content:center">5</span></td><td><span class="sel2" style="height:26px;min-width:90px">全部处罚</span></td><td><span class="sel2" style="height:26px;min-width:90px">正常（默认不处罚）</span></td></tr>
+                <tr><td>同IP</td><td><span class="ipt" style="height:26px;justify-content:center">3</span></td><td><span class="sel2" style="height:26px;min-width:90px">全部处罚</span></td><td><span class="sel2" style="height:26px;min-width:90px">正常（默认不处罚）</span></td></tr>
+                <tr><td>同设备号</td><td><span class="ipt" style="height:26px;justify-content:center">4</span></td><td><span class="sel2" style="height:26px;min-width:90px">全部处罚</span></td><td><span class="sel2" style="height:26px;min-width:90px">正常（默认不处罚）</span></td></tr>
+              </table>
+              <div style="color:var(--danger);font-size:11.5px;margin-top:10px;line-height:1.8">处罚范围：<br>全部处罚——若选择全部处罚，系统不考虑处罚触发值<br>只处罚超出此范围的账号——若选择超出范围，则需要填写处罚触发值，只处罚超出触发值<br>输入范围值：2-9999</div>
+            </div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">确定</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <p class="cap"><span class="dot"></span>字段明细</p>
+          <table class="spec">
+            <tr><th style="width:84px">字段</th><th style="width:84px">控件</th><th>取值 / 校验 / 联动</th></tr>
+            <tr><td class="k">关联原因</td><td>只读</td><td>固定四行：同上级代理 / 同浏览器标识 / 同IP / 同设备号。</td></tr>
+            <tr><td class="k">处罚触发值</td><td>数字输入</td><td>同关联人数达到此值即触发。<b>范围 2-9999</b>；处罚范围=「全部处罚」时<b>置灰/忽略</b>，=「只处罚超出此范围」时<b>必填</b>。</td></tr>
+            <tr><td class="k">处罚范围</td><td>下拉</td><td>全部处罚 / 只处罚超出此范围的账号（默认全部处罚）。</td></tr>
+            <tr><td class="k">处罚方式</td><td>下拉</td><td>9 种（正常 + 8 处罚动作），默认「正常（默认不处罚）」。</td></tr>
+          </table>
+          <div class="note"><b>核心联动（见下图）：</b>处罚范围决定处罚触发值是否生效——「全部处罚」忽略触发值；「只处罚超出此范围」必须填 2-9999 的触发值。</div>
+        </div>
+      </div>
+
+      <div class="sub-h">§4·处罚范围 → 触发值 联动图</div>
+      <div class="card">
+        <svg viewBox="0 0 1100 250" style="width:100%;height:auto;font-family:inherit">
+          <!-- 起点 -->
+          <rect x="30" y="100" width="170" height="50" rx="8" fill="#fff" stroke="#409eff" stroke-width="1.6"/>
+          <text x="115" y="122" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2733">处罚范围</text>
+          <text x="115" y="140" text-anchor="middle" font-size="11" fill="#8a94a6">下拉选择</text>
+          <!-- 分叉线 -->
+          <path d="M200 125 H300" stroke="#c0c4cc" stroke-width="1.4" fill="none"/>
+          <path d="M300 125 V48 H360" stroke="#15a34a" stroke-width="1.6" fill="none"/>
+          <path d="M300 125 V205 H360" stroke="#e8801f" stroke-width="1.6" fill="none"/>
+          <circle cx="300" cy="125" r="3.5" fill="#c0c4cc"/>
+          <!-- 分支1 全部处罚 -->
+          <rect x="360" y="26" width="200" height="44" rx="7" fill="#eef9f0" stroke="#bce6c4"/>
+          <text x="372" y="46" font-size="12.5" font-weight="700" fill="#3a9d4a">选「全部处罚」</text>
+          <text x="372" y="62" font-size="11.5" fill="#5b6472">不考虑触发值（默认）</text>
+          <path d="M560 48 H640" stroke="#15a34a" stroke-width="1.6" fill="none"/>
+          <polygon points="640,48 632,44 632,52" fill="#15a34a"/>
+          <rect x="644" y="26" width="240" height="44" rx="7" fill="#fff" stroke="#dcdfe6"/>
+          <text x="656" y="46" font-size="12.5" fill="#909399">处罚触发值</text>
+          <text x="656" y="62" font-size="11.5" fill="#b6bdc9">置灰 / 忽略，无需填写</text>
+          <!-- 分支2 超出范围 -->
+          <rect x="360" y="183" width="200" height="44" rx="7" fill="#fff1e6" stroke="#ffcda3"/>
+          <text x="372" y="203" font-size="12.5" font-weight="700" fill="#e8801f">选「只处罚超出此范围」</text>
+          <text x="372" y="219" font-size="11.5" fill="#5b6472">需按触发值卡控</text>
+          <path d="M560 205 H640" stroke="#e8801f" stroke-width="1.6" fill="none"/>
+          <polygon points="640,205 632,201 632,209" fill="#e8801f"/>
+          <rect x="644" y="183" width="240" height="44" rx="7" fill="#fff" stroke="#409eff"/>
+          <text x="656" y="203" font-size="12.5" font-weight="700" fill="#1f2733">处罚触发值 <tspan fill="#f56c6c">*必填</tspan></text>
+          <text x="656" y="219" font-size="11.5" fill="#5b6472">输入 2-9999，超出触发值才处罚</text>
+          <!-- 右侧汇总注 -->
+          <rect x="908" y="92" width="170" height="66" rx="7" fill="#fff8d6" stroke="#f0d97a"/>
+          <text x="922" y="113" font-size="12" font-weight="700" fill="#7a5a00">结果</text>
+          <text x="922" y="131" font-size="11" fill="#6b5b16">触发值是否参与卡控，</text>
+          <text x="922" y="146" font-size="11" fill="#6b5b16">完全由「处罚范围」决定</text>
+        </svg>
+      </div>
+
+      <div class="sub-h">§4·变更规则下拉 + 同关联会员弹窗</div>
+      <div class="grid2">
+        <div class="card">
+          <p class="cap"><span class="dot"></span>变更规则下拉（8 个处罚动作）</p>
+          <div class="menu">
+            <div class="mi">限制登录</div><div class="mi">限制充值</div><div class="mi">限制提现</div><div class="mi">修改层级</div><div class="mi">恢复正常</div><div class="mi">冻结</div><div class="mi">禁止进入游戏</div><div class="mi rd">禁止领取优惠</div>
+          </div>
+          <div class="note" style="margin-top:10px"><b>说明：</b>选择某动作 → 二次确认 → 写入该关联组「当前处罚方式」并记录操作人/更新时间。「恢复正常」=置回「正常（默认不处罚）」。</div>
+        </div>
+        <div class="card">
+          <p class="cap"><span class="dot"></span>同关联会员弹窗（点同关联人数打开）</p>
+          <div class="dlg">
+            <div class="dlg-h"><span>同关联会员</span><span class="x">✕</span></div>
+            <div class="dlg-b" style="padding:14px">
+              <table class="subtbl">
+                <tr><th>会员ID</th><th>会员账号</th><th>注册时间</th><th>最近登录</th></tr>
+                <tr><td class="lk">100732</td><td>sunny99</td><td>2026-03-18 10:05</td><td>2026-06-18 19:40</td></tr>
+                <tr><td class="lk">100231</td><td>vip_arjun</td><td>2026-03-12 21:14</td><td>2026-06-18 21:14</td></tr>
+              </table>
+            </div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">关闭</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 同关联处罚记录 -->
+  <section>
+    <div class="sec-h"><span class="no">5</span><h2>刷子监控 · 同关联处罚记录</h2></div>
+    <div class="card">
+      <p class="lead">第二个 Tab：记录被处罚会员的明细（含会员信息、VIP、层级、充提数据、关联类型与操作类型）。</p>
+      <p class="cap" style="margin-top:12px"><span class="dot"></span>页面示意</p>
+      <div class="scr">
+        <div class="scr-bar"><i class="r1"></i><i class="r2"></i><i class="r3"></i><span class="t">风控管理 / 刷子监控 / 同关联处罚记录</span></div>
+        <div class="scr-body">
+          <div class="ptabs"><div class="ptab">同关联监控</div><div class="ptab on">同关联处罚记录</div></div>
+          <div class="flt">
+            <span class="it">账号信息 <span class="inp">请输入</span></span>
+            <span class="it">关联类型 <span class="selx">请选择</span></span>
+            <span class="it">操作类型 <span class="selx">请选择</span></span>
+            <span class="it">创建时间 <span class="dtb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>开始 至 结束</span></span>
+          </div>
+          <div class="btns"><span class="bt bl">查询</span><span class="bt gn">重置</span></div>
+          <div style="overflow-x:auto"><table class="tbl" style="min-width:1180px">
+            <tr><th style="width:30px"><span class="cbx"></span></th><th>会员ID</th><th>会员账号</th><th>账号状态</th><th>VIP等级</th><th>会员层级</th><th>注册时间</th><th>充值金额</th><th>提现金额</th><th>充提差额</th><th>关联类型</th><th>操作类型</th><th>操作人</th><th>操作时间</th></tr>
+            <tr><td><span class="cbx"></span></td><td class="lk">100488</td><td>lucky_ravi</td><td><span class="bdg r">冻结</span></td><td>VIP2</td><td>L3</td><td>2026-03-19 10:22</td><td>58,200.00</td><td>12,000.00</td><td style="color:#15a34a">46,200.00</td><td>同设备号</td><td>冻结</td><td>jamie</td><td>2026-03-21 09:30</td></tr>
+            <tr><td><span class="cbx"></span></td><td class="lk">100732</td><td>sunny99</td><td><span class="bdg g">正常</span></td><td>VIP1</td><td>L2</td><td>2026-04-02 16:51</td><td>0.00</td><td>35,000.00</td><td style="color:#f56c6c">-35,000.00</td><td>同IP</td><td>限制提现</td><td>jamie</td><td>2026-03-21 10:15</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="sub-h">列说明</div>
+      <table class="spec">
+        <tr><th style="width:110px">列</th><th>说明</th></tr>
+        <tr><td class="k">会员ID / 账号</td><td>被处罚会员；会员ID 蓝色可点。</td></tr>
+        <tr><td class="k">账号状态</td><td>徽标：正常=绿；冻结 / 受限=红。</td></tr>
+        <tr><td class="k">VIP等级 / 会员层级</td><td>会员当前 VIP 与层级（如 VIP2 / L3）。</td></tr>
+        <tr><td class="k">充值/提现金额、充提差额</td><td>充提流水；差额 = 充值 − 提现，正绿负红。</td></tr>
+        <tr><td class="k">关联类型</td><td>命中的关联维度（同上级代理 / 同浏览器标识 / 同IP / 同设备号）。</td></tr>
+        <tr><td class="k">操作类型</td><td>实际执行的处罚动作（限制登录 / 冻结 / 限制提现…）。</td></tr>
+        <tr><td class="k">操作人 / 操作时间</td><td>执行处罚的后台账号与时间。</td></tr>
+      </table>
+      <div class="note"><b>筛选：</b>账号信息（会员ID/账号）/ 关联类型 / 操作类型 / 创建时间（日期范围）。本页仅查询 + 批量操作，无新增/导出。</div>
+    </div>
+  </section>
+
+  <!-- 6 汇总 -->
+  <section>
+    <div class="sec-h"><span class="no">6</span><h2>联动 / 校验 / 状态 汇总</h2></div>
+    <div class="card">
+      <div class="sub-h" style="margin-top:0">关键联动一览</div>
+      <table class="spec">
+        <tr><th style="width:160px">场景</th><th>联动规则</th></tr>
+        <tr><td class="k">黑名单 · Tab 类型</td><td>会员类（登录/充值/提现）显示财务列与会员ID新增；标识类（IP/设备）显示限制类型列与勾选、筛选多「限制类型」。</td></tr>
+        <tr><td class="k">黑名单 · 编辑</td><td>会员类编辑=「修改备注」仅改备注；标识类编辑=改限制类型 + 备注。</td></tr>
+        <tr><td class="k">登录黑名单 · 差额列</td><td>仅登录黑名单出现「充/提差额」；充值/提现黑名单无此列。</td></tr>
+        <tr><td class="k">刷子监控 · 处罚范围</td><td>全部处罚 → 触发值置灰；只处罚超出范围 → 触发值必填（2-9999）。</td></tr>
+        <tr><td class="k">刷子监控 · 同关联人数</td><td>蓝色可点 → 打开同关联会员列表。</td></tr>
+        <tr><td class="k">关联查询 · 列显隐</td><td>表头显示设置控制列显隐；导出弹窗独立控制导出字段；主键列不可关闭。</td></tr>
+      </table>
+
+      <div class="sub-h">校验规则</div>
+      <ul class="rules">
+        <li><b>黑名单新增</b>：会员类会员ID必填且需校验存在；标识类 IP/设备号必填、限制类型至少勾 1 项。</li>
+        <li><b>默认自动规则</b>：处罚范围=只处罚超出范围时，处罚触发值必填且须在 <b>2-9999</b>；=全部处罚时不校验触发值。</li>
+        <li><b>破坏性操作</b>：删除黑名单、变更规则、批量处罚均走二次确认弹窗。</li>
+      </ul>
+
+      <div class="sub-h">二次确认弹窗</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div class="card" style="margin:0">
+          <p class="cap"><span class="dot"></span>移除黑名单确认</p>
+          <div class="dlg"><div class="dlg-h"><span>提示</span></div>
+            <div class="dlg-b" style="display:flex;gap:8px;color:var(--reg)"><span style="color:#e6a23c">⚠</span>确认从登录黑名单移除该记录？移除后该会员将恢复正常登录。</div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">确定</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <p class="cap"><span class="dot"></span>变更规则确认</p>
+          <div class="dlg"><div class="dlg-h"><span>变更规则</span></div>
+            <div class="dlg-b" style="display:flex;gap:8px;color:var(--reg)"><span style="color:#e6a23c">⚠</span>确认对该关联组执行「冻结」？将影响该组下全部会员。</div>
+            <div class="dlg-f" style="text-align:right"><span class="bt plain">取消</span> <span class="bt solid">确定</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:14px"><b>通用规范：</b>分页统一 <b>[10/20/50/100]</b>（线上默认每页 50 条）；金额列右对齐；空数据显示 —；按钮配色——查询蓝 / 重置绿 / 导出黄 / 新增红 / 表头显示设置橙 / 默认自动规则蓝。</div>
+    </div>
+  </section>
+
+  <footer>风控管理 · 功能 PRD · V1.0 · 2026-06 — 关联查询 / 黑名单 / 刷子监控</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>风控管理 · 全状态平铺（Figma 导入）</title><style>
+  :root{
+    --primary:#409eff;--primary-hover:#66b1ff;--primary-active:#3a8ee6;
+    --success:#67c23a;--warning:#e6a23c;--danger:#f56c6c;
+    --text:#303133;--text-regular:#606266;--text-secondary:#909399;--text-placeholder:#a8abb2;
+    --border:#dcdfe6;--border-light:#e4e7ed;--bg-content:#f0f2f5;--radius:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;color:var(--text);background:#eef1f6;padding:32px;-webkit-font-smoothing:antialiased}
+
+  /* ===== 平铺板式 ===== */
+  .board-head{max-width:1480px;margin:0 auto 26px}
+  .board-head h1{font-size:22px;margin:0 0 6px}
+  .board-head p{color:var(--text-secondary);font-size:13px;margin:0}
+  .frame{max-width:1480px;margin:0 auto 30px;background:#fff;border:1px solid #e4e7ed;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden}
+  .frame-title{background:#2563EB;color:#fff;font-size:14px;font-weight:600;padding:11px 18px;letter-spacing:.3px}
+  .frame-body{background:#fff}
+  .frame-body.center{padding:22px;display:flex;justify-content:center;background:#f7f9fc}
+
+  /* ===== 页面级子 Tab ===== */
+  .page-tabs{display:flex;gap:28px;border-bottom:1px solid var(--border-light);padding:0 24px}
+  .page-tab{padding:14px 2px;color:var(--text-regular);cursor:pointer;position:relative;font-size:14px;user-select:none}
+  .page-tab:hover{color:var(--primary)}
+  .page-tab.active{color:var(--primary);font-weight:600}
+  .page-tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--primary)}
+
+  /* ===== 筛选区 ===== */
+  .pad{padding:18px 24px}
+  .filter-bar{display:flex;flex-wrap:wrap;gap:14px 22px;padding:0 0 8px}
+  .filter-item{display:flex;align-items:center;gap:8px}
+  .filter-item > label{color:var(--text-regular);white-space:nowrap}
+  .el-select{height:34px;border:1px solid var(--border);border-radius:var(--radius);padding:0 28px 0 12px;font:inherit;color:var(--text);background:#fff;cursor:pointer;width:148px;
+    appearance:none;-webkit-appearance:none;-moz-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8abb2' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:right 9px center}
+  .el-select:focus{outline:none;border-color:var(--primary)}
+  .el-input-f{height:34px;border:1px solid var(--border);border-radius:var(--radius);padding:0 10px;font:inherit;color:var(--text);background:#fff;width:178px}
+  .el-input-f:focus{outline:none;border-color:var(--primary)}
+  .el-input-f::placeholder{color:var(--text-placeholder)}
+  .el-input-f.wide{width:240px}
+
+  /* 日期范围 */
+  .dt-box{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius);height:34px;padding:0 10px;gap:6px;background:#fff}
+  .dt-box:focus-within{border-color:var(--primary)}
+  .dt-box .dt-cal{display:inline-flex;color:#c0c4cc}
+  .dt-box .dt-input{border:none;height:auto;padding:0;width:118px;text-align:center;background:transparent;font:inherit;color:var(--text)}
+  .dt-box .dt-input:focus{outline:none}
+  .dt-box .dt-arrow{color:var(--text-placeholder);margin:0 2px}
+
+  /* 操作按钮行 */
+  .action-row{display:flex;align-items:center;gap:10px;padding:2px 0 2px}
+  .el-btn-sm{background:#eef4ff;color:#2f6fe0;border:1px solid #c3d8ff;font:inherit;font-size:13px;padding:7px 16px;border-radius:var(--radius);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:.15s}
+  .el-btn-sm:hover{background:#e0ecff;border-color:#a9c8ff}
+  .el-btn-sm svg{flex:0 0 auto}
+  .el-btn-plain{background:#fff;color:var(--text-regular);border:1px solid var(--border);font:inherit;font-size:13px;padding:7px 16px;border-radius:var(--radius);cursor:pointer;transition:.15s}
+  .el-btn-plain:hover{color:var(--primary);border-color:#c6e2ff;background:#ecf5ff}
+  /* 颜色修饰：导出=黄 / 新增=红 / 表头=橙 / 重置=绿 */
+  .bc-green{background:#eef9f0 !important;color:#3a9d4a !important;border-color:#bce6c4 !important}
+  .bc-green:hover{background:#e0f4e4 !important}
+  .bc-yellow{background:#fef6e8 !important;color:#d99326 !important;border-color:#f5d99a !important}
+  .bc-yellow:hover{background:#fcefd6 !important}
+  .bc-red{background:#fdeeee !important;color:#e05656 !important;border-color:#f3b9b9 !important}
+  .bc-red:hover{background:#fbe2e2 !important}
+  .bc-orange{background:#fff1e6 !important;color:#e8801f !important;border-color:#ffcda3 !important}
+  .bc-orange:hover{background:#ffe7d3 !important}
+
+  /* 批量操作行 */
+  .batch-row{display:flex;align-items:center;gap:14px;padding:10px 0 2px}
+  .batch-row .sel-count{color:var(--text-secondary);font-size:13px}
+  .tbl-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--primary);margin:0;vertical-align:middle}
+
+  /* ===== 表格 ===== */
+  .table-wrap{padding:14px 0 0}
+  .table-wrap.scroll{overflow-x:auto}
+  .el-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border-light)}
+  .el-table th{background:#eef2fb;color:#5b6b8c;font-weight:600;text-align:center;padding:11px 12px;border-bottom:1px solid #e1e8f5;white-space:nowrap}
+  .el-table td{text-align:center;color:var(--text-regular);padding:11px 12px;border-bottom:1px solid var(--border-light)}
+  .el-table tbody tr:hover{background:#f5f7fa}
+  .el-table td.lcell,.el-table th.lcell{text-align:left}
+  .el-table .mono{font-family:"SFMono-Regular",Consolas,Menlo,monospace;color:var(--text)}
+  .num-link{color:var(--primary);cursor:pointer;font-weight:500}
+  .num-link:hover{text-decoration:underline}
+  .cell-green{color:#15a34a}.cell-red{color:var(--danger)}.cell-dash{color:#c0c4cc}
+  .multi{line-height:1.7;text-align:left}
+  .multi .sub{color:var(--text-secondary);font-size:12px}
+
+  /* 状态/处罚 徽标 */
+  .badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:12px;line-height:18px;border:1px solid transparent;white-space:nowrap}
+  .badge.green{background:#f0f9eb;color:#67c23a;border-color:#e1f3d8}
+  .badge.red{background:#fef0f0;color:#f56c6c;border-color:#fde2e2}
+  .badge.gray{background:#f4f4f5;color:#909399;border-color:#e9e9eb}
+  .badge.warn{background:#fdf6ec;color:#e6a23c;border-color:#faecd8}
+  .badge.blue{background:#ecf5ff;color:#409eff;border-color:#d9ecff}
+
+  /* 表内文字操作 */
+  .op-link{color:var(--primary);cursor:pointer;background:none;border:none;font:inherit;padding:0 6px}
+  .op-link:hover{text-decoration:underline}
+  .op-link.danger{color:var(--danger)}
+  .op-link.warn{color:var(--warning)}
+  .op-link .caret{font-size:10px;margin-left:2px}
+  .el-table td.ops{white-space:nowrap}
+  .icon-op{cursor:pointer;background:none;border:none;padding:4px;display:inline-flex;vertical-align:middle}
+  .icon-op svg{width:16px;height:16px}
+  .icon-op.edit{color:var(--primary)}.icon-op.del{color:var(--danger)}
+
+  /* ===== 分页 ===== */
+  .pager-full{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:14px 0 0;color:var(--text-regular);font-size:13px;flex-wrap:wrap}
+  .pager-full .total{margin-right:auto;color:var(--text-secondary)}
+  .pg{min-width:30px;height:30px;padding:0 6px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text-regular);cursor:pointer;font:inherit;font-size:13px}
+  .pg:hover{color:var(--primary);border-color:#c6e2ff}
+  .pg.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .pg:disabled{color:var(--text-placeholder);cursor:not-allowed}
+  .page-size{height:30px;border:1px solid var(--border);border-radius:var(--radius);padding:0 24px 0 8px;font:inherit;background:#fff;cursor:pointer;
+    appearance:none;-webkit-appearance:none;-moz-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8abb2' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:right 6px center}
+  .jump-input{width:46px;height:30px;border:1px solid var(--border);border-radius:var(--radius);text-align:center;font:inherit}
+  .jump-input:focus,.page-size:focus{outline:none;border-color:var(--primary)}
+
+  /* 状态开关 */
+  .el-switch{display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;min-width:60px;height:24px;border-radius:12px;background:#dcdfe6;padding:0 6px;cursor:pointer;color:#fff;font-size:12px;flex-direction:row-reverse;user-select:none;white-space:nowrap}
+  .el-switch .sw-dot{width:18px;height:18px;border-radius:50%;background:#fff;flex:0 0 auto}
+  .el-switch.on{background:var(--primary);flex-direction:row}
+
+  /* ===== 弹窗 ===== */
+  .modal-box{background:#fff;border-radius:6px;width:460px;max-width:100%;box-shadow:0 8px 32px rgba(0,0,0,.16);overflow:hidden}
+  .modal-box.wide{width:1040px}
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--border-light);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .modal-head .x{cursor:pointer;color:var(--text-placeholder);font-size:18px;line-height:1}
+  .modal-body{padding:20px}
+  .modal-foot{padding:12px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end;gap:10px}
+  .modal-filter{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:2px 0 14px}
+
+  /* 表单项 */
+  .form-item{display:flex;align-items:flex-start;padding:8px 0}
+  .form-item .label{width:96px;flex:0 0 96px;text-align:right;padding-right:14px;padding-top:8px;color:var(--text-regular);line-height:1.5}
+  .form-item .label .req{color:var(--danger);margin-right:2px}
+  .form-item .control{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px}
+  .el-input{width:100%;height:34px;border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;font:inherit;color:var(--text);background:#fff}
+  .el-input:focus{outline:none;border-color:var(--primary)}
+  .el-input::placeholder{color:var(--text-placeholder)}
+  .input-group{display:flex;width:100%;gap:8px}
+  .input-group .el-input{flex:1}
+  .el-textarea{width:100%;min-height:84px;border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font:inherit;color:var(--text);background:#fff;resize:vertical;line-height:1.5}
+  .el-textarea:focus{outline:none;border-color:var(--primary)}
+  .el-textarea::placeholder{color:var(--text-placeholder)}
+
+  /* 单选 / 复选 */
+  .el-radio{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;color:var(--text-regular)}
+  .el-radio input{display:none}
+  .el-radio .ring{width:14px;height:14px;border-radius:50%;border:1px solid var(--border);background:#fff;flex:0 0 auto;position:relative}
+  .el-radio input:checked + .ring{border-color:var(--primary);background:var(--primary)}
+  .el-radio input:checked + .ring::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:#fff}
+  .el-radio input:checked ~ .rtxt{color:var(--text)}
+  .el-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;color:var(--text-regular)}
+  .el-check input{display:none}
+  .el-check .sq{width:14px;height:14px;border-radius:2px;border:1px solid var(--border);background:#fff;flex:0 0 auto;position:relative}
+  .el-check input:checked + .sq{background:var(--primary);border-color:var(--primary)}
+  .el-check input:checked + .sq::after{content:"";position:absolute;top:1px;left:4px;width:4px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .el-check input:checked ~ .ctxt{color:var(--text)}
+
+  /* 列设置 / 字段勾选 */
+  .col-pop{width:300px;background:#fff;border:1px solid #e4e7ed;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.12);padding:8px 0}
+  .col-pop .col-head{padding:6px 14px 8px;border-bottom:1px solid var(--border-light);margin-bottom:4px}
+  .col-pop .col-grid{display:flex;flex-direction:column;gap:4px;padding:2px 14px 4px}
+  .col-pop .el-check{padding:5px 0}
+  .export-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .export-head .et{font-size:13px;font-weight:600;color:var(--text)}
+  .export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px}
+
+  /* 下拉菜单（变更规则） */
+  .menu-pop{width:170px;background:#fff;border:1px solid #e4e7ed;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.12);padding:6px 0}
+  .menu-pop .mi{padding:9px 18px;font-size:13px;color:var(--text-regular);cursor:pointer}
+  .menu-pop .mi:hover{background:#ecf5ff;color:var(--primary)}
+  .menu-pop .mi.danger{color:var(--danger)}
+  .menu-pop .mi.divided{border-top:1px solid var(--border-light)}
+
+  /* 说明 / 提示 */
+  .note-red{color:var(--danger);font-size:12px;line-height:1.9;margin-top:12px}
+  .note-gray{color:var(--text-secondary);font-size:12px;margin-top:6px}
+  .spec-table th,.spec-table td{padding:8px 10px}
+
+  /* 二次确认 */
+  .confirm-body{display:flex;gap:8px;padding:4px 20px 20px;color:var(--text-regular);align-items:flex-start}
+  .confirm-body .warn-i{color:var(--warning);font-size:16px;line-height:1.4}
+
+  /* Toast */
+  .toast-static{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #ebeef5;box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:6px;padding:11px 18px;font-size:14px;color:var(--text)}
+  .toast-static .ok{width:16px;height:16px;border-radius:50%;background:#67c23a;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;position:relative}
+  .toast-static .ok::after{content:"";width:3px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px}
+</style></head>
+<body>
+<div class="board-head"><h1>风控管理 · 全状态平铺（Figma 导入）</h1><p>关联查询 / 黑名单 / 刷子监控 —— 所有子 Tab 列表页、弹窗、Toast 静态铺开，便于导入 Figma 走查。</p></div>
+
+<!-- ════════ 关联查询 ════════ -->
+<section class="frame"><div class="frame-title">1 · 关联查询 · 查会员（按会员ID查关联 IP / 设备）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab active">查会员</div><div class="page-tab">设备关联</div><div class="page-tab">IP关联</div></div>
+  <div class="pad">
+    <div class="filter-bar">
+      <div class="filter-item"><label>会员ID：</label><input class="el-input-f wide" placeholder="会员ID或账号信息"></div>
+      <div class="filter-item"><label>登录时间：</label><div class="dt-box"><span class="dt-cal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><input class="dt-input" value="2026-03-19"><span class="dt-arrow">至</span><input class="dt-input" value="2026-06-19"></div></div>
+    </div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>重置</button>
+      <button class="el-btn-sm bc-yellow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>导出</button>
+      <button class="el-btn-sm bc-orange"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>表头显示设置</button>
+    </div>
+    <div class="table-wrap"><table class="el-table" style="min-width:1080px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:150px">会员ID</th><th style="width:140px">登录ip</th><th style="width:100px">登录次数</th><th style="width:150px">IP归属地</th><th style="width:150px">此IP登录过会员数</th><th style="width:180px">此IP最近登录时间</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="lcell num-link">100231 / vip_arjun</td><td class="mono">49.36.214.10</td><td>128</td><td>印度 / 德里</td><td class="num-link">3</td><td>2026-06-18 21:14:33</td></tr>
+        <tr><td>2</td><td class="lcell num-link">100488 / lucky_ravi</td><td class="mono">103.59.74.22</td><td>56</td><td>印度 / 孟买</td><td class="num-link">1</td><td>2026-06-19 08:02:10</td></tr>
+        <tr><td>3</td><td class="lcell num-link">100732 / sunny99</td><td class="mono">49.36.214.10</td><td>9</td><td>印度 / 德里</td><td class="num-link">3</td><td>2026-06-17 19:40:55</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 3 条</span><select class="page-size"><option>50条/页</option><option>20条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">2 · 关联查询 · 设备关联（按设备号查注册 / 登录人数）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">查会员</div><div class="page-tab active">设备关联</div><div class="page-tab">IP关联</div></div>
+  <div class="pad">
+    <div class="filter-bar"><div class="filter-item"><label>设备号：</label><select class="el-select" style="width:300px"><option>请选择</option><option>e150d0d5033b0a2313412a95088df8e0</option></select></div></div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>重置</button>
+      <button class="el-btn-sm bc-yellow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>导出</button>
+      <button class="el-btn-sm bc-orange"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>表头显示设置</button>
+    </div>
+    <div class="table-wrap"><table class="el-table" style="min-width:1080px">
+      <thead><tr><th style="width:60px">序号</th><th>设备号</th><th style="width:170px">使用此设备注册人数</th><th style="width:170px">使用此设备登录人数</th><th style="width:170px">此设备最近登录会员</th><th style="width:180px">会员最近登录时间</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">e150d0d5033b0a2313412a95088df8e0</td><td class="num-link">4</td><td class="num-link">6</td><td class="num-link">100231 / vip_arjun</td><td>2026-06-18 21:14:33</td></tr>
+        <tr><td>2</td><td class="mono">1fc91fc9eec29413195e1d6a26b98cda</td><td class="num-link">1</td><td class="num-link">2</td><td class="num-link">100488 / lucky_ravi</td><td>2026-06-19 08:02:10</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 2 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">3 · 关联查询 · IP关联（按 IP 查注册 / 登录人数）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">查会员</div><div class="page-tab">设备关联</div><div class="page-tab active">IP关联</div></div>
+  <div class="pad">
+    <div class="filter-bar"><div class="filter-item"><label>IP：</label><select class="el-select" style="width:220px"><option>请选择</option><option>49.36.214.10</option></select></div></div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>重置</button>
+      <button class="el-btn-sm bc-yellow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>导出</button>
+      <button class="el-btn-sm bc-orange"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>表头显示设置</button>
+    </div>
+    <div class="table-wrap"><table class="el-table" style="min-width:1000px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:180px">ip</th><th style="width:150px">此IP注册人数</th><th style="width:150px">此IP登录人数</th><th style="width:170px">此IP最近登录会员</th><th style="width:180px">会员最近登录时间</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">49.36.214.10</td><td class="num-link">3</td><td class="num-link">5</td><td class="num-link">100231 / vip_arjun</td><td>2026-06-18 21:14:33</td></tr>
+        <tr><td>2</td><td class="mono">103.59.74.22</td><td class="num-link">1</td><td class="num-link">1</td><td class="num-link">100488 / lucky_ravi</td><td>2026-06-19 08:02:10</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 2 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">4 · 查会员 · 导出弹窗（勾选导出字段）</div><div class="frame-body center">
+  <div class="modal-box" style="width:560px"><div class="modal-head"><span>导出</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <div class="export-head"><span class="et">导出数据 (6)</span><div style="display:flex;gap:8px"><button class="el-btn-plain" style="padding:5px 12px">全选</button><button class="el-btn-plain" style="padding:5px 12px">清空</button></div></div>
+    <div class="export-grid">
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">会员ID</span></label>
+      <label class="el-check"><input type="checkbox"><span class="sq"></span><span class="ctxt">登录ip</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">登录次数</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">IP归属地</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">此IP登录过会员数</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">此IP最近登录时间</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">备注</span></label>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">取消</button><button class="el-btn-sm">导出</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">5 · 查会员 · 表头显示设置（列显隐弹层）</div><div class="frame-body center">
+  <div class="col-pop"><div class="col-head"><label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">全选</span></label></div>
+    <div class="col-grid">
+      <label class="el-check"><input type="checkbox" checked disabled><span class="sq"></span><span class="ctxt">会员ID</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">登录ip</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">登录次数</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">IP归属地</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">此IP登录过会员数</span></label>
+      <label class="el-check"><input type="checkbox" checked><span class="sq"></span><span class="ctxt">此IP最近登录时间</span></label>
+      <label class="el-check"><input type="checkbox"><span class="sq"></span><span class="ctxt">备注</span></label>
+    </div>
+  </div>
+</div></section>
+
+<!-- ════════ 黑名单 ════════ -->
+<section class="frame"><div class="frame-title">6 · 黑名单 · 登录黑名单（含充提次数 / 金额 / 差额 / 余额）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab active">登录黑名单</div><div class="page-tab">充值黑名单</div><div class="page-tab">提现黑名单</div><div class="page-tab">IP黑名单</div><div class="page-tab">设备黑名单</div></div>
+  <div class="pad">
+    <div class="filter-bar"><div class="filter-item"><label>会员ID：</label><input class="el-input-f wide" placeholder="会员ID或账号信息"></div></div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>重置</button>
+      <button class="el-btn-sm bc-red"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+    </div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1240px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:150px">会员ID</th><th style="width:80px">币种</th><th style="width:110px">充/提次数</th><th style="width:170px">充/提金额</th><th style="width:130px">充/提差额</th><th style="width:120px">总余额</th><th style="width:140px">注册IP</th><th style="width:140px">备注</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="num-link">100488 / lucky_ravi</td><td>INR</td><td>12 / 3</td><td>58,200.00 / 12,000.00</td><td>46,200.00</td><td>1,250.00</td><td class="mono">103.59.74.22</td><td>多账号刷优惠</td><td class="ops"><button class="op-link">编辑</button><button class="op-link danger">删除</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 1 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">7 · 黑名单 · 充值黑名单（充值次数 / 金额，无差额列）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">登录黑名单</div><div class="page-tab active">充值黑名单</div><div class="page-tab">提现黑名单</div><div class="page-tab">IP黑名单</div><div class="page-tab">设备黑名单</div></div>
+  <div class="pad">
+    <div class="filter-bar"><div class="filter-item"><label>会员ID：</label><input class="el-input-f wide" placeholder="会员ID或账号信息"></div></div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green">重置</button>
+      <button class="el-btn-sm bc-red"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+    </div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1100px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:150px">会员ID</th><th style="width:80px">币种</th><th style="width:110px">充值次数</th><th style="width:150px">充值金额</th><th style="width:120px">总余额</th><th style="width:140px">注册IP</th><th style="width:140px">备注</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="num-link">100501 / mega_win</td><td>INR</td><td>9</td><td>42,000.00</td><td>880.00</td><td class="mono">49.36.214.22</td><td>充值异常</td><td class="ops"><button class="op-link">编辑</button><button class="op-link danger">删除</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 1 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">8 · 黑名单 · 提现黑名单（提现次数 / 金额，无差额列）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">登录黑名单</div><div class="page-tab">充值黑名单</div><div class="page-tab active">提现黑名单</div><div class="page-tab">IP黑名单</div><div class="page-tab">设备黑名单</div></div>
+  <div class="pad">
+    <div class="filter-bar"><div class="filter-item"><label>会员ID：</label><input class="el-input-f wide" placeholder="会员ID或账号信息"></div></div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green">重置</button>
+      <button class="el-btn-sm bc-red"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+    </div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1100px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:150px">会员ID</th><th style="width:80px">币种</th><th style="width:110px">提现次数</th><th style="width:150px">提现金额</th><th style="width:120px">总余额</th><th style="width:140px">注册IP</th><th style="width:140px">备注</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="num-link">100732 / sunny99</td><td>INR</td><td>8</td><td>35,000.00</td><td>320.00</td><td class="mono">49.36.214.10</td><td>异常提现</td><td class="ops"><button class="op-link">编辑</button><button class="op-link danger">删除</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 1 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">9 · 黑名单 · IP黑名单（IP + 限制类型 / 操作人 / 操作时间）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">登录黑名单</div><div class="page-tab">充值黑名单</div><div class="page-tab">提现黑名单</div><div class="page-tab active">IP黑名单</div><div class="page-tab">设备黑名单</div></div>
+  <div class="pad">
+    <div class="filter-bar">
+      <div class="filter-item"><label>IP地址：</label><input class="el-input-f" placeholder="请输入"></div>
+      <div class="filter-item"><label>限制类型：</label><select class="el-select"><option>全部</option><option>注册</option><option>登录</option></select></div>
+    </div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green">重置</button>
+      <button class="el-btn-sm bc-red"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+    </div>
+    <div class="table-wrap"><table class="el-table" style="min-width:1000px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:180px">IP地址</th><th style="width:140px">限制类型</th><th>备注</th><th style="width:120px">操作人</th><th style="width:180px">操作时间</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">103.59.74.22</td><td><span class="badge gray">登录</span></td><td>撞库登录</td><td>jamie</td><td>2026-06-10 14:30:00</td><td class="ops"><button class="op-link">编辑</button><button class="op-link danger">删除</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 1 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">10 · 黑名单 · 设备黑名单（设备号 + 限制类型）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">登录黑名单</div><div class="page-tab">充值黑名单</div><div class="page-tab">提现黑名单</div><div class="page-tab">IP黑名单</div><div class="page-tab active">设备黑名单</div></div>
+  <div class="pad">
+    <div class="filter-bar">
+      <div class="filter-item"><label>设备号：</label><input class="el-input-f wide" placeholder="请输入"></div>
+      <div class="filter-item"><label>限制类型：</label><select class="el-select"><option>全部</option><option>注册</option><option>登录</option></select></div>
+    </div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green">重置</button>
+      <button class="el-btn-sm bc-red"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+    </div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1080px">
+      <thead><tr><th style="width:60px">序号</th><th style="width:280px">设备号</th><th style="width:150px">限制类型</th><th>备注</th><th style="width:120px">操作人</th><th style="width:180px">操作时间</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">e150d0d5033b0a2313412a95088df8e0</td><td><span class="badge gray">注册</span> <span class="badge gray">登录</span></td><td>多账号刷优惠</td><td>jamie</td><td>2026-06-12 09:15:00</td><td class="ops"><button class="op-link">编辑</button><button class="op-link danger">删除</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 1 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">11 · 黑名单 · 新增登录黑名单弹窗（会员ID + 查询 + 备注）</div><div class="frame-body center">
+  <div class="modal-box" style="width:500px"><div class="modal-head"><span>添加登录黑名单</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <div class="form-item"><div class="label"><span class="req">*</span>会员ID</div><div class="control"><div class="input-group"><input class="el-input" placeholder="请输入会员ID"><button class="el-btn-sm" style="padding:7px 18px">查询</button></div></div></div>
+    <div class="form-item"><div class="label">备注</div><div class="control"><textarea class="el-textarea" placeholder="请输入备注（选填）"></textarea></div></div>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">取消</button><button class="el-btn-sm">确定</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">12 · 黑名单 · 编辑（修改备注弹窗）</div><div class="frame-body center">
+  <div class="modal-box" style="width:460px"><div class="modal-head"><span>修改备注</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <div class="form-item"><div class="label">备注</div><div class="control"><textarea class="el-textarea" placeholder="请输入备注">多账号刷优惠</textarea></div></div>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">取消</button><button class="el-btn-sm">确定</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">13 · 黑名单 · 新增 IP 黑名单弹窗（IP + 限制类型勾选 + 备注）</div><div class="frame-body center">
+  <div class="modal-box" style="width:500px"><div class="modal-head"><span>添加IP黑名单</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <div class="form-item"><div class="label"><span class="req">*</span>IP</div><div class="control"><input class="el-input" placeholder="请输入"></div></div>
+    <div class="form-item"><div class="label"><span class="req">*</span>限制类型</div><div class="control"><label class="el-check"><input type="checkbox"><span class="sq"></span><span class="ctxt">注册</span></label><label class="el-check"><input type="checkbox"><span class="sq"></span><span class="ctxt">登录</span></label></div></div>
+    <div class="form-item"><div class="label">备注</div><div class="control"><textarea class="el-textarea" placeholder="请输入备注（选填）"></textarea></div></div>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">取消</button><button class="el-btn-sm">确定</button></div></div>
+</div></section>
+
+<!-- ════════ 刷子监控 ════════ -->
+<section class="frame"><div class="frame-title">14 · 刷子监控 · 同关联监控（关联类型 / 处罚方式 / 同关联人数）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab active">同关联监控</div><div class="page-tab">同关联处罚记录</div></div>
+  <div class="pad">
+    <div class="filter-bar">
+      <div class="filter-item"><label>关联类型：</label><select class="el-select"><option>请选择</option><option>同上级代理</option><option>同浏览器标识</option><option>同IP</option><option>同设备号</option></select></div>
+      <div class="filter-item"><label>操作状态：</label><select class="el-select"><option>请选择</option><option>正常（默认不处罚）</option><option>限制登录</option><option>冻结</option></select></div>
+      <div class="filter-item"><label>同关联信息：</label><input class="el-input-f" placeholder="同关联信息"></div>
+      <div class="filter-item"><label>同关联人数：</label><input class="el-input-f" style="width:128px" placeholder="同关联人数"></div>
+      <div class="filter-item"><label>创建时间：</label><div class="dt-box"><span class="dt-cal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><input class="dt-input" placeholder="开始时间"><span class="dt-arrow">至</span><input class="dt-input" placeholder="结束时间"></div></div>
+    </div>
+    <div class="action-row" style="justify-content:space-between">
+      <div style="display:flex;gap:10px">
+        <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+        <button class="el-btn-sm bc-green">重置</button>
+      </div>
+      <button class="el-btn-sm" style="background:#409eff;color:#fff;border-color:#409eff">默认自动规则</button>
+    </div>
+    <div class="batch-row"><button class="el-btn-plain">批量操作 <span style="font-size:10px">▾</span></button><span class="sel-count">已选择 0 条数据</span></div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1240px">
+      <thead><tr><th style="width:42px"><input type="checkbox" class="tbl-cb"></th><th style="width:110px">关联类型</th><th>具体关联信息</th><th style="width:110px">同关联人数</th><th style="width:160px">当前处罚方式</th><th style="width:90px">操作人</th><th style="width:180px">创建 / 更新时间</th><th style="width:130px">操作</th></tr></thead>
+      <tbody>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同设备号</td><td class="lcell mono">e150d0d5033b0a2313412a95088df8e0</td><td class="num-link">10</td><td><span class="badge green">正常（默认不处罚）</span></td><td class="cell-dash">-</td><td class="multi">2026-03-21 19:14:00<div class="sub">2026-03-23 13:46:20</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同设备号</td><td class="lcell mono">1fc91fc9eec29413195e1d6a26b98cda</td><td class="num-link">2</td><td><span class="badge green">正常（默认不处罚）</span></td><td class="cell-dash">-</td><td class="multi">2026-03-21 18:10:50<div class="sub">2026-03-21 18:10:50</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同设备号</td><td class="lcell mono">4dc038394e77188c0f41e3d74b8a9960</td><td class="num-link">3</td><td><span class="badge green">正常（默认不处罚）</span></td><td class="cell-dash">-</td><td class="multi">2026-03-21 16:37:40<div class="sub">2026-03-21 16:37:40</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同IP</td><td class="lcell mono">49.36.214.10</td><td class="num-link">3</td><td><span class="badge red">限制登录</span></td><td>jamie</td><td class="multi">2026-03-20 14:02:00<div class="sub">2026-03-21 09:30:00</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同浏览器标识</td><td class="lcell mono">ua-7f1c9b2e4a</td><td class="num-link">5</td><td><span class="badge green">正常（默认不处罚）</span></td><td class="cell-dash">-</td><td class="multi">2026-03-19 20:11:00<div class="sub">2026-03-19 20:11:00</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td>同上级代理</td><td class="lcell mono">agent_8841</td><td class="num-link">4</td><td><span class="badge red">禁止领取优惠</span></td><td>jamie</td><td class="multi">2026-03-18 11:00:00<div class="sub">2026-03-20 10:15:00</div></td><td class="ops"><button class="op-link">变更规则 <span class="caret">▾</span></button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 9 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">15 · 刷子监控 · 默认自动规则弹窗（触发值 / 处罚范围 / 处罚方式）</div><div class="frame-body center">
+  <div class="modal-box" style="width:840px"><div class="modal-head"><span>默认自动规则</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <table class="el-table spec-table" style="min-width:auto">
+      <thead><tr><th style="width:140px">关联原因</th><th style="width:150px">处罚触发值</th><th>处罚范围</th><th>处罚方式</th></tr></thead>
+      <tbody>
+        <tr><td>同上级代理</td><td><input class="el-input" value="4" style="height:32px"></td><td><select class="el-select" style="width:100%"><option>全部处罚</option><option>只处罚超出此范围的账号</option></select></td><td><select class="el-select" style="width:100%"><option>正常（默认不处罚）</option></select></td></tr>
+        <tr><td>同浏览器标识</td><td><input class="el-input" value="5" style="height:32px"></td><td><select class="el-select" style="width:100%"><option>全部处罚</option></select></td><td><select class="el-select" style="width:100%"><option>正常（默认不处罚）</option></select></td></tr>
+        <tr><td>同IP</td><td><input class="el-input" value="3" style="height:32px"></td><td><select class="el-select" style="width:100%"><option>全部处罚</option></select></td><td><select class="el-select" style="width:100%"><option>正常（默认不处罚）</option></select></td></tr>
+        <tr><td>同设备号</td><td><input class="el-input" value="4" style="height:32px"></td><td><select class="el-select" style="width:100%"><option>全部处罚</option></select></td><td><select class="el-select" style="width:100%"><option>正常（默认不处罚）</option></select></td></tr>
+      </tbody>
+    </table>
+    <div class="note-red">处罚范围：<br>全部处罚——若选择全部处罚，系统不考虑处罚触发值<br>只处罚超出此范围的账号——若选择超出范围，则需要填写处罚触发值，只处罚超出触发值<br>输入范围值：2-9999</div>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">取消</button><button class="el-btn-sm">确定</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">16 · 刷子监控 · 同关联会员列表弹窗（点「同关联人数」打开）</div><div class="frame-body center">
+  <div class="modal-box" style="width:680px"><div class="modal-head"><span>同关联会员</span><span class="x">×</span></div>
+  <div class="modal-body">
+    <table class="el-table">
+      <thead><tr><th style="width:150px">会员ID</th><th style="width:150px">会员账号</th><th style="width:180px">注册时间</th><th style="width:180px">最近登录</th></tr></thead>
+      <tbody>
+        <tr><td class="num-link">100732</td><td>sunny99</td><td>2026-03-18 10:05:00</td><td>2026-06-18 19:40:55</td></tr>
+        <tr><td class="num-link">100231</td><td>vip_arjun</td><td>2026-03-12 21:14:33</td><td>2026-06-18 21:14:33</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="modal-foot"><button class="el-btn-plain">关闭</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">17 · 刷子监控 · 同关联处罚记录（会员信息 / VIP / 层级 / 充提差额）</div><div class="frame-body">
+  <div class="page-tabs"><div class="page-tab">同关联监控</div><div class="page-tab active">同关联处罚记录</div></div>
+  <div class="pad">
+    <div class="filter-bar">
+      <div class="filter-item"><label>账号信息：</label><input class="el-input-f" placeholder="请输入"></div>
+      <div class="filter-item"><label>关联类型：</label><select class="el-select"><option>请选择</option><option>同上级代理</option><option>同浏览器标识</option><option>同IP</option><option>同设备号</option></select></div>
+      <div class="filter-item"><label>操作类型：</label><select class="el-select"><option>请选择</option><option>限制登录</option><option>冻结</option><option>限制提现</option></select></div>
+      <div class="filter-item"><label>创建时间：</label><div class="dt-box"><span class="dt-cal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><input class="dt-input" placeholder="开始时间"><span class="dt-arrow">至</span><input class="dt-input" placeholder="结束时间"></div></div>
+    </div>
+    <div class="action-row">
+      <button class="el-btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>查询</button>
+      <button class="el-btn-sm bc-green">重置</button>
+    </div>
+    <div class="batch-row"><button class="el-btn-plain">批量操作 <span style="font-size:10px">▾</span></button><span class="sel-count">已选择 0 条数据</span></div>
+    <div class="table-wrap scroll"><table class="el-table" style="min-width:1560px">
+      <thead><tr><th style="width:42px"><input type="checkbox" class="tbl-cb"></th><th style="width:90px">会员ID</th><th style="width:130px">会员账号</th><th style="width:90px">账号状态</th><th style="width:90px">VIP等级</th><th style="width:90px">会员层级</th><th style="width:170px">注册时间</th><th style="width:120px">充值金额</th><th style="width:120px">提现金额</th><th style="width:120px">充提差额</th><th style="width:110px">关联类型</th><th style="width:110px">操作类型</th><th style="width:90px">操作人</th><th style="width:170px">操作时间</th></tr></thead>
+      <tbody>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td class="num-link">100488</td><td>lucky_ravi</td><td><span class="badge red">冻结</span></td><td>VIP2</td><td>L3</td><td>2026-03-19 10:22:41</td><td>58,200.00</td><td>12,000.00</td><td class="cell-green">46,200.00</td><td>同设备号</td><td>冻结</td><td>jamie</td><td>2026-03-21 09:30:00</td></tr>
+        <tr><td><input type="checkbox" class="tbl-cb"></td><td class="num-link">100732</td><td>sunny99</td><td><span class="badge green">正常</span></td><td>VIP1</td><td>L2</td><td>2026-04-02 16:51:09</td><td>0.00</td><td>35,000.00</td><td class="cell-red">-35,000.00</td><td>同IP</td><td>限制提现</td><td>jamie</td><td>2026-03-21 10:15:00</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager-full"><span class="total">共 2 条</span><select class="page-size"><option>50条/页</option></select><button class="pg" disabled>&lt;</button><button class="pg on">1</button><button class="pg" disabled>&gt;</button><span>前往</span><input class="jump-input" value="1"><span>页</span></div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">18 · 刷子监控 · 变更规则下拉菜单（8 种处罚动作）</div><div class="frame-body center">
+  <div class="menu-pop">
+    <div class="mi">限制登录</div><div class="mi">限制充值</div><div class="mi">限制提现</div><div class="mi">修改层级</div><div class="mi">恢复正常</div><div class="mi">冻结</div><div class="mi">禁止进入游戏</div><div class="mi danger">禁止领取优惠</div>
+  </div>
+</div></section>
+
+<section class="frame"><div class="frame-title">19 · 二次确认弹窗（移除黑名单 / 变更规则）</div><div class="frame-body center">
+  <div class="modal-box" style="width:420px"><div class="modal-head" style="border:none"><span>提示</span><span class="x">×</span></div>
+  <div class="confirm-body"><span class="warn-i">⚠</span><span>确认从登录黑名单移除该记录？移除后该会员将恢复正常登录。</span></div>
+  <div class="modal-foot" style="border:none"><button class="el-btn-plain">取消</button><button class="el-btn-sm">确定</button></div></div>
+</div></section>
+
+<section class="frame"><div class="frame-title">20 · Toast 操作提示（查询 / 新增 / 保存 / 移除 / 导出 / 变更规则）</div><div class="frame-body center" style="justify-content:flex-start">
+  <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+    <div class="toast-static"><span class="ok"></span><span>查询条件已应用</span></div>
+    <div class="toast-static"><span class="ok"></span><span>已加入登录黑名单</span></div>
+    <div class="toast-static"><span class="ok"></span><span>已保存</span></div>
+    <div class="toast-static"><span class="ok"></span><span>已移除</span></div>
+    <div class="toast-static"><span class="ok"></span><span>导出任务已提交</span></div>
+    <div class="toast-static"><span class="ok"></span><span>已变更规则</span></div>
+  </div>
+</div></section>
+
+</body></html>
