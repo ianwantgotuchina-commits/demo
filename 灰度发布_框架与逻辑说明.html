@@ -355,27 +355,7 @@
     <p class="lead">工作量大、跨团队、或方案有多选的点。建议对每项让开发给「<b>能做 / 要改方案 / 工作量</b>」三选一，避免来回拉扯。</p>
 
     <div class="confirm">
-      <div class="ch"><span class="cn">1</span>hash 分流算法 · 跨语言一致</div>
-      <div class="why">前后端语言不同，要保证同一会员算出同一 slot，否则新旧版来回跳。</div>
-      <div class="opt"><b>倾向：</b>统一选 CRC32 或 MurmurHash；由谁提供一致实现待定。</div>
-    </div>
-    <div class="confirm">
-      <div class="ch"><span class="cn">2</span>核心资金表加「来源标识」字段</div>
-      <div class="why">要动充值/投注/账变等核心表结构，涉及历史数据兼容、对账、DBA —— 最容易被顶回来的点。</div>
-      <div class="opt"><b>倾向：</b>新字段必须可空、向前兼容；全表加 or 只加关键表待定。</div>
-    </div>
-    <div class="confirm">
-      <div class="ch"><span class="cn">3</span>全局版本号 + TTL 缓存刷新</div>
-      <div class="why">涉及前端架构改造和接口埋版本号，工作量集中在前端。</div>
-      <div class="opt"><b>倾向：</b>第一期「版本号 + TTL≤5min」；WebSocket 即时下发列为二期。</div>
-    </div>
-    <div class="confirm">
-      <div class="ch"><span class="cn">4</span>灰度接口在登录关键链路上</div>
-      <div class="why">接口慢会拖累登录/核心页，需后端做缓存方案。</div>
-      <div class="opt"><b>倾向：</b>配置内存缓存 + 会员命中结果短时缓存，方案待后端定。</div>
-    </div>
-    <div class="confirm">
-      <div class="ch"><span class="cn">5</span>百分比「缩量」的处理</div>
+      <div class="ch"><span class="cn">1</span>百分比「缩量」的处理</div>
       <div class="why">放量比例调低会把部分会员甩回旧版，属敏感操作。</div>
       <div class="opt"><b>倾向：</b>后台二次确认 + 明确提示影响范围。</div>
     </div>
