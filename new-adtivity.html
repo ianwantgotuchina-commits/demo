@@ -1,0 +1,3685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>活动配置（充值大礼包和累计充值）</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.7.2/index.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;font-size:14px;color:#303133;background:transparent;min-height:100vh}
+[v-cloak]{display:none}
+
+/* ─── 列表页顶栏 ─── */
+.pg-header{height:52px;background:#fff;border-bottom:1px solid #e4e7ed;display:flex;align-items:center;padding:0 20px;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:sticky;top:0;z-index:10}
+.pg-logo{font-size:15px;font-weight:700;color:#409eff}
+.pg-nav{font-size:13px;color:#909399}
+.pg-nav b{color:#303133}
+.pg-main{padding:20px}
+.pg-card{background:#fff;border-radius:6px;border:1px solid #e4e7ed;padding:18px}
+.pg-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f0f2f5}
+.pg-card-title{font-size:15px;font-weight:600;color:#1f2937}
+
+/* 列表表格 */
+.list-table{width:100%;border-collapse:collapse}
+.list-table th{padding:10px 12px;background:#f5f7fa;font-size:12px;font-weight:500;color:#606266;text-align:left;border-bottom:1px solid #ebeef5}
+.list-table td{padding:12px;font-size:13px;color:#606266;border-bottom:1px solid #f0f2f5}
+.list-table tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px}
+.badge-on{background:#f0f9eb;color:#67c23a}
+.badge-off{background:#f4f4f5;color:#909399}
+.op-link{color:#409eff;cursor:pointer;font-size:12px;margin-right:8px}
+.op-link:hover{color:#337ecc;text-decoration:underline}
+.op-danger{color:#f56c6c;cursor:pointer;font-size:12px}
+
+/* ─── 遮罩 ─── */
+.overlay{
+  display:none;
+  position:fixed;inset:0;z-index:2000;
+  background:transparent;
+  align-items:center;justify-content:center;
+}
+.overlay.show{display:flex}
+
+/* ─── 弹窗 ─── */
+.dlg{
+  background:#fff;border-radius:8px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  width:min(1200px,94vw);
+  height:min(92vh,920px);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* 弹窗头 */
+.dlg-hd{flex-shrink:0;height:52px;padding:0 20px;border-bottom:1px solid #e4e7ed;display:flex;align-items:center;justify-content:space-between;background:#fff}
+.dlg-title{font-size:15px;font-weight:600;color:#1f2937}
+.dlg-close{width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:6px;font-size:18px;color:#909399;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.dlg-close:hover{background:#f5f7fa;color:#303133}
+
+/* 活动类型行 */
+.dlg-type{padding:10px 0 14px;border-bottom:1px solid #ebeef5;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dlg-type-label{font-size:13px;color:#606266;white-space:nowrap;margin-right:4px}
+.type-btn{height:32px;padding:0 16px;border-radius:4px;border:1px solid #dcdfe6;background:#fff;font-size:13px;color:#606266;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;font-family:inherit}
+.type-btn:hover{border-color:#409eff;color:#409eff}
+.type-btn.on{border-color:#409eff;background:#409eff;color:#fff;font-weight:500}
+.type-btn .dot{width:6px;height:6px;border-radius:50%;background:#c0c4cc;transition:background .15s}
+.type-btn:hover .dot{background:#409eff}
+.type-btn.on .dot{background:rgba(255,255,255,.7)}
+
+/* 弹窗可滚动内容 */
+.dlg-body{flex:1;overflow-y:auto;padding:14px 20px 8px}
+.dlg-body::-webkit-scrollbar{width:5px}
+.dlg-body::-webkit-scrollbar-thumb{background:#e0e3e8;border-radius:3px}
+.dlg-body::-webkit-scrollbar-thumb:hover{background:#c0c4cc}
+
+/* 弹窗底部 */
+.dlg-ft{flex-shrink:0;height:56px;padding:0 20px;border-top:1px solid #e4e7ed;display:flex;align-items:center;justify-content:flex-end;gap:8px;background:#fff}
+
+/* ─── 区块 ─── */
+.sec{border:1px solid #e4e7ed;border-radius:6px;overflow:hidden;margin-bottom:12px}
+.sec:last-child{margin-bottom:0}
+.sec-hd{padding:11px 16px;border-bottom:1px solid #f0f2f5;display:flex;align-items:center;gap:8px}
+.sec-bar{width:3px;height:13px;background:#409eff;border-radius:2px;flex-shrink:0}
+.sec-title{font-size:13px;font-weight:600;color:#1f2937}
+.sec-body{padding:18px 16px 4px}
+
+/* ─── 表单行 ─── */
+.frow{display:flex;align-items:flex-start;margin-bottom:16px}
+.frow:last-child{margin-bottom:4px}
+.flabel{flex-shrink:0;width:136px;font-size:13px;color:#606266;line-height:32px;text-align:right;padding-right:12px}
+.flabel.req::before{content:"*";color:#f56c6c;margin-right:3px}
+.fval{flex:1;min-width:0}
+.fhint{font-size:12px;color:#909399;margin-top:4px;line-height:1.4}
+.inline-grp{display:flex;align-items:center;flex-wrap:wrap;gap:0 24px;min-height:32px}
+.cond-grp{display:flex;align-items:center;flex-wrap:wrap;gap:0 20px;min-height:32px}
+.sub-inp{margin-top:8px}
+
+/* 原生 select */
+.f-sel{height:32px;padding:0 26px 0 10px;font-size:13px;color:#374151;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 7px center;border:1px solid #dcdfe6;border-radius:4px;appearance:none;-webkit-appearance:none;cursor:pointer;outline:none}
+.f-sel:hover{border-color:#c0c4cc}
+.f-sel:focus{border-color:#409eff;box-shadow:0 0 0 2px rgba(64,158,255,.15)}
+
+/* 问号 */
+.q{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#bfbfbf;color:#fff;font-size:10px;margin-left:3px;cursor:help;line-height:14px;flex-shrink:0;vertical-align:middle}
+
+/* 奖励表格 */
+.rwd-wrap{overflow-x:auto;margin-bottom:12px}
+.rwd-tbl{width:100%;border-collapse:collapse;min-width:940px}
+.rwd-tbl th{padding:9px 7px;background:#f5f7fa;font-size:12px;font-weight:500;color:#606266;text-align:left;white-space:nowrap;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5}
+.rwd-tbl th:first-child{text-align:center;width:38px}
+.rwd-tbl td{padding:7px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+.rwd-tbl td:first-child{text-align:center;font-size:13px;color:#606266;font-weight:500}
+.rwd-tbl tr:last-child td{border-bottom:none}
+.rwd-tbl tr:hover td{background:#fafafa}
+.th-q{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#c0c4cc;color:#fff;font-size:10px;margin-left:2px;cursor:help;line-height:13px;vertical-align:middle}
+.range-inp{display:flex;align-items:center;gap:4px}
+.range-sep{color:#c0c4cc;font-size:12px;flex-shrink:0}
+.up-btn{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;font-size:12px;color:#606266;background:#fff;border:1px solid #dcdfe6;border-radius:4px;cursor:pointer;transition:border-color .15s,color .15s;white-space:nowrap}
+.up-btn:hover{border-color:#409eff;color:#409eff}
+
+/* 手机预览 */
+.phone-preview{width:130px;border-radius:14px;overflow:hidden;border:2px solid #e4e7ed;box-shadow:0 4px 14px rgba(0,0,0,.1)}
+
+/* 语言 tab */
+.lang-tabs{display:flex;border-bottom:1px solid #e4e7ed;margin-bottom:14px}
+.lang-tab{padding:8px 16px;font-size:13px;color:#909399;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:5px;transition:color .15s,border-color .15s}
+.lang-tab.active{color:#409eff;border-bottom-color:#409eff}
+
+/* 富文本 */
+.rich-bar{display:flex;align-items:center;flex-wrap:wrap;gap:2px;padding:5px 7px;background:#f5f7fa;border:1px solid #e4e7ed;border-radius:4px 4px 0 0}
+.rich-btn{width:25px;height:25px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;border-radius:3px;font-size:13px;color:#606266;transition:background .15s}
+.rich-btn:hover{background:#e9ecef}
+.rich-sep{width:1px;height:16px;background:#dcdfe6;margin:0 2px;flex-shrink:0}
+.rich-sel{height:25px;padding:0 4px;font-size:12px;border:1px solid #e4e7ed;border-radius:3px;background:#fff;outline:none;cursor:pointer}
+.rich-area{min-height:110px;padding:10px;border:1px solid #e4e7ed;border-top:none;border-radius:0 0 4px 4px;background:#fff;outline:none;resize:vertical;font-size:13px;color:#606266;width:100%;font-family:inherit}
+
+/* 上传 */
+.img-up{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;font-size:13px;color:#606266;border:1px solid #dcdfe6;border-radius:4px;cursor:pointer;background:#fff;transition:border-color .2s,color .2s}
+.img-up:hover{border-color:#409eff;color:#409eff}
+.img-up-hint{font-size:12px;color:#909399;margin-top:5px}
+
+/* ── 时间行（展示时间 / 起止时间） ── */
+.time-row{display:flex;align-items:center;gap:0}
+.time-picker-wrap{
+  flex:1;display:flex;align-items:center;
+  border:1px solid #dcdfe6;border-radius:4px;
+  overflow:hidden;background:#fff;
+  transition:border-color .2s;
+  max-width:480px;
+}
+.time-picker-wrap:focus-within{border-color:#409eff;box-shadow:0 0 0 2px rgba(64,158,255,.1)}
+.time-picker-wrap.is-disabled{background:#f5f7fa;border-color:#e4e7ed}
+.time-picker-wrap .el-date-editor{
+  border:none !important;box-shadow:none !important;
+  background:transparent;flex:1;
+}
+.time-picker-wrap .el-date-editor .el-input__wrapper{
+  box-shadow:none !important;background:transparent;padding:0 10px;
+}
+.time-sep-icon{
+  flex-shrink:0;padding:0 8px;color:#c0c4cc;font-size:13px;
+  pointer-events:none;
+}
+.perm-btn{
+  flex-shrink:0;margin-left:10px;height:32px;padding:0 14px;
+  border-radius:4px;border:1px solid #dcdfe6;background:#fff;
+  font-size:13px;color:#606266;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;
+  transition:all .15s;white-space:nowrap;font-family:inherit;
+}
+.perm-btn:hover{border-color:#409eff;color:#409eff}
+.perm-btn.active{border-color:#409eff;background:#ecf5ff;color:#409eff;font-weight:500}
+.perm-btn .perm-check{
+  width:14px;height:14px;border-radius:2px;border:1px solid #dcdfe6;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;font-size:10px;transition:all .15s;flex-shrink:0;
+}
+.perm-btn.active .perm-check{background:#409eff;border-color:#409eff;color:#fff}
+
+/* ── 参与会员 子区域 ── */
+.mem-sub{padding:14px 16px;background:#f9fafb;border-top:1px solid #ebeef5}
+.mem-hint{font-size:12px;color:#f56c6c;margin-bottom:6px;line-height:1.6}
+.mem-2col{display:flex;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.mem-left{display:flex;flex-direction:column;gap:10px;min-width:130px}
+.mem-right{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}
+.level-grid{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:2px}.level-grid .el-checkbox{margin-right:16px;margin-bottom:4px}
+
+
+/* ── 批量上传 二级弹窗 ── */
+.up-dlg-mask{
+  display:none;position:fixed;inset:0;z-index:3000;
+  background:rgba(0,0,0,.45);
+  align-items:center;justify-content:center;
+}
+.up-dlg-mask.show{display:flex}
+.up-dlg{
+  background:#fff;border-radius:8px;
+  box-shadow:0 16px 48px rgba(0,0,0,.22);
+  width:540px;max-width:92vw;max-height:88vh;overflow:hidden;
+  display:flex;flex-direction:column;
+  animation:dlgIn .15s ease;
+}
+.up-dlg-body{padding:20px;overflow-y:auto;flex:1}
+.up-summary-ok{background:#f0f9eb;color:#67c23a;border:1px solid #e1f3d8}
+.up-summary-err{background:#fef0f0;color:#f56c6c;border:1px solid #fbc4c4}
+#up-error-tbody tr:nth-child(odd){background:#fff}
+#up-error-tbody tr:nth-child(even){background:#fafafa}
+#up-error-tbody td{padding:6px 10px;border-bottom:1px solid #f0f2f5;color:#606266}
+#up-error-tbody td:first-child{color:#f56c6c;font-weight:600}
+.up-dlg-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid #e4e7ed;
+}
+.up-dlg-title{font-size:15px;font-weight:600;color:#1f2937}
+.up-dlg-close{border:none;background:none;cursor:pointer;font-size:18px;color:#909399;line-height:1;padding:2px 6px;border-radius:4px}
+.up-dlg-close:hover{background:#f5f7fa;color:#303133}
+.up-dlg-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.up-dlg-label{font-size:13px;color:#606266;white-space:nowrap}
+.up-btn-data{
+  display:inline-flex;align-items:center;gap:6px;
+  height:32px;padding:0 14px;border-radius:4px;
+  border:1px solid #dcdfe6;background:#fff;
+  font-size:13px;color:#606266;cursor:pointer;font-family:inherit;
+  transition:border-color .15s,color .15s;
+}
+.up-btn-data:hover{border-color:#409eff;color:#409eff}
+.up-guide{margin-bottom:16px}
+.up-guide-title{font-size:13px;font-weight:500;color:#303133;margin-bottom:8px}
+.up-guide-item{font-size:13px;color:#606266;line-height:1.8}
+.up-guide-link{font-size:13px;color:#409eff;cursor:pointer;text-decoration:none;display:inline-block;margin-top:8px}
+.up-guide-link:hover{text-decoration:underline}
+.up-dlg-ft{
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  padding:12px 20px;border-top:1px solid #e4e7ed;
+}
+
+
+/* ── 指定达成 子配置 ── */
+.achieve-sub{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.achieve-block{background:#f7f8fa;border-radius:6px;border:1px solid #ebeef5;padding:14px 18px}
+.achieve-row{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.achieve-label{font-size:13px;color:#606266;white-space:nowrap;flex-shrink:0;margin-right:8px}
+.achieve-req{color:#f56c6c}
+.achieve-gte{
+  flex-shrink:0;height:32px;padding:0 10px;font-size:13px;color:#606266;
+  background:#f5f7fa;border:1px solid #dcdfe6;margin:0 0 0 -1px;
+  display:inline-flex;align-items:center;z-index:1;position:relative;
+}
+.achieve-input{flex:1;min-width:80px}
+
+/* 两级联动选择器 */
+.cascade-wrap{
+  flex:1;border:1px solid #dcdfe6;border-radius:4px;overflow:hidden;
+  background:#fff;display:flex;min-height:160px;max-height:220px;
+  margin-top:8px;
+}
+.cascade-left{
+  width:120px;flex-shrink:0;
+  border-right:1px solid #ebeef5;overflow-y:auto;
+}
+.cascade-left::-webkit-scrollbar,.cascade-right::-webkit-scrollbar{width:4px}
+.cascade-left::-webkit-scrollbar-thumb,.cascade-right::-webkit-scrollbar-thumb{background:#e0e3e8;border-radius:2px}
+.cascade-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;font-size:13px;color:#606266;cursor:pointer;
+  transition:background .15s;gap:6px;
+}
+.cascade-item:hover{background:#f0f6ff}
+.cascade-item.active{background:#ecf5ff;color:#409eff}
+.cascade-item .ci-arrow{font-size:11px;color:#c0c4cc;flex-shrink:0}
+.cascade-item.active .ci-arrow{color:#409eff}
+.cascade-right{flex:1;overflow-y:auto}
+.cascade-right .cascade-item{justify-content:flex-start;gap:8px}
+
+/* 已选 tags */
+.cascade-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:24px}
+.c-tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:3px;
+  background:#ecf5ff;border:1px solid #d9ecff;
+  font-size:12px;color:#409eff;cursor:default;
+}
+.c-tag-x{cursor:pointer;color:#c0c4cc;font-size:11px}
+.c-tag-x:hover{color:#f56c6c}
+
+/* 邀请好友 合格下级 */
+.invite-sub{margin-top:12px;padding-top:12px;border-top:1px solid #ebeef5}
+.invite-sub-title{font-size:13px;color:#303133;font-weight:500;margin-bottom:10px}
+.invite-sub-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.invite-sub-row:last-child{margin-bottom:0}
+.invite-sub-label{font-size:13px;color:#606266;white-space:nowrap;flex-shrink:0;min-width:90px}
+
+
+/* achieve 块内 select 样式 */
+.achieve-f-sel{width:200px;height:32px;flex-shrink:0}
+/* achieve 块内 el-select 弹出层修复 */
+.achieve-sel-popper{z-index:4000 !important}
+.achieve-block .el-select .el-select__wrapper{border-radius:0}
+.achieve-block .el-input__wrapper{border-radius:0}
+
+
+/* ── 充值大礼包奖励配置 ── */
+.rb-section { margin-bottom: 16px; border: 1px solid #ebeef5; border-radius: 6px; overflow: hidden; }
+.rb-section-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ebeef5;
+}
+.rb-section-title { font-size: 13px; font-weight: 600; color: #303133; }
+.rb-section-badge {
+  font-size: 11px; padding: 1px 8px; border-radius: 10px;
+  background: #ecf5ff; color: #409eff; font-weight: 500;
+}
+.rb-section-body { padding: 14px; }
+
+/* 打码量行 */
+.rb-audit-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0; }
+.rb-audit-label { font-size: 13px; color: #606266; white-space: nowrap; }
+.rb-audit-inp { width: 90px; }
+
+/* 快捷金额 */
+.rb-quick-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rb-quick-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden;
+  background: #fff;
+}
+.rb-quick-item .el-input { width: 90px; }
+.rb-quick-item .el-input .el-input__wrapper { border-radius: 0; box-shadow: none !important; }
+.rb-quick-del {
+  width: 26px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border-left: 1px solid #dcdfe6; cursor: pointer; color: #c0c4cc; font-size: 14px;
+  transition: color .15s, background .15s; flex-shrink: 0;
+}
+.rb-quick-del:hover { color: #f56c6c; background: #fef0f0; }
+.rb-quick-add {
+  height: 32px; padding: 0 12px; border: 1px dashed #c6e2ff; border-radius: 4px;
+  color: #409eff; font-size: 13px; cursor: pointer; background: #ecf5ff;
+  display: inline-flex; align-items: center; gap: 4px; transition: all .15s;
+}
+.rb-quick-add:hover { background: #d9ecff; }
+.rb-quick-limit { font-size: 12px; color: #909399; margin-left: 4px; }
+
+/* 充值次数奖励表格 */
+.rb-tbl-wrap { overflow-x: auto; }
+.rb-tbl { width: 100%; border-collapse: collapse; min-width: 680px; }
+.rb-tbl th {
+  padding: 9px 10px; background: #f5f7fa; font-size: 12px; font-weight: 500;
+  color: #606266; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid #ebeef5; border-top: 1px solid #ebeef5;
+}
+.rb-tbl th:first-child { text-align: center; width: 48px; }
+.rb-tbl td { padding: 8px 10px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+.rb-tbl td:first-child { text-align: center; font-size: 13px; color: #606266; font-weight: 500; }
+.rb-tbl tr:last-child td { border-bottom: none; }
+.rb-tbl tr:hover td { background: #fafafa; }
+.rb-tbl-add {
+  margin-top: 10px; height: 32px; padding: 0 14px; border: 1px dashed #c6e2ff;
+  border-radius: 4px; color: #409eff; font-size: 13px; cursor: pointer;
+  background: #ecf5ff; display: inline-flex; align-items: center; gap: 4px;
+}
+.rb-tbl-add:hover { background: #d9ecff; }
+.rb-tbl-del { color: #c0c4cc; cursor: pointer; font-size: 16px; line-height: 1; }
+.rb-tbl-del:hover { color: #f56c6c; }
+
+/* 开关行 */
+.rb-switch-row { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.rb-switch-label { font-size: 13px; color: #606266; white-space: nowrap; }
+.rb-switch-desc { font-size: 12px; color: #909399; }
+
+/* 无通道提示 */
+.rb-no-channel {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; color: #909399; font-size: 13px; gap: 12px;
+}
+.rb-no-channel-icon { font-size: 32px; }
+
+
+/* ── 奖励金额类型切换 ── */
+.rb-amt-type { display: flex; gap: 0; margin-bottom: 10px; }
+.rb-amt-type-btn {
+  height: 28px; padding: 0 14px; font-size: 12px; cursor: pointer;
+  border: 1px solid #dcdfe6; background: #fff; color: #606266;
+  transition: all .15s; font-family: inherit;
+}
+.rb-amt-type-btn:first-child { border-radius: 4px 0 0 4px; }
+.rb-amt-type-btn:last-child  { border-radius: 0 4px 4px 0; border-left: none; }
+.rb-amt-type-btn.active { background: #409eff; border-color: #409eff; color: #fff; font-weight: 500; }
+.rb-amt-type-btn:hover:not(.active) { color: #409eff; border-color: #409eff; z-index: 1; position: relative; }
+.rb-pct-suffix { color: #909399; font-size: 12px; }
+
+
+/* ── 稽核方式 ── */
+.rb-audit-block { display: flex; flex-direction: column; gap: 14px; padding: 14px; background: #fafbfc; border: 1px solid #ebeef5; border-radius: 6px; }
+.rb-audit-group { display: flex; flex-direction: column; gap: 8px; }
+.rb-audit-group-title { font-size: 12px; font-weight: 600; color: #303133; }
+.rb-audit-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rb-audit-type-btns { display: flex; }
+.rb-audit-type-btn {
+  height: 30px; padding: 0 12px; font-size: 12px; cursor: pointer;
+  border: 1px solid #dcdfe6; background: #fff; color: #606266;
+  transition: all .15s; font-family: inherit;
+}
+.rb-audit-type-btn:first-child { border-radius: 4px 0 0 4px; }
+.rb-audit-type-btn:last-child  { border-radius: 0 4px 4px 0; border-left: none; }
+.rb-audit-type-btn.active { background: #409eff; border-color: #409eff; color: #fff; font-weight: 500; }
+.rb-audit-type-btn:hover:not(.active) { color: #409eff; border-color: #409eff; z-index:1; position:relative; }
+.rb-audit-inp { width: 130px; }
+.rb-audit-desc { font-size: 12px; color: #909399; }
+.rb-audit-divider { height: 1px; background: #ebeef5; }
+
+
+/* ── 恢复初始配置 按钮 ── */
+.rb-reset-btn {
+  height: 32px; padding: 0 14px; border-radius: 4px;
+  border: 1px solid #e6a23c; background: #fdf6ec; color: #e6a23c;
+  font-size: 13px; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.rb-reset-btn:hover { background: #faecd8; border-color: #cf9236; }
+
+/* ── 确认弹窗 ── */
+.rb-confirm-mask {
+  position: fixed; inset: 0; z-index: 4000;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.rb-confirm-box {
+  background: #fff; border-radius: 8px; width: 420px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.22);
+  overflow: hidden; animation: dlgIn .15s ease;
+}
+.rb-confirm-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px; border-bottom: 1px solid #e4e7ed;
+}
+.rb-confirm-icon { font-size: 20px; }
+.rb-confirm-title { font-size: 15px; font-weight: 600; color: #1f2937; }
+.rb-confirm-body {
+  padding: 20px;
+  font-size: 14px; color: #303133; line-height: 1.6;
+}
+.rb-confirm-ft {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 12px 20px; border-top: 1px solid #e4e7ed;
+}
+.rb-confirm-cancel {
+  height: 34px; padding: 0 18px; border-radius: 4px;
+  border: 1px solid #dcdfe6; background: #fff; color: #606266;
+  font-size: 13px; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.rb-confirm-cancel:hover { border-color: #c0c4cc; color: #303133; }
+.rb-confirm-ok {
+  height: 34px; padding: 0 18px; border-radius: 4px;
+  border: none; background: #e6a23c; color: #fff;
+  font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+  transition: background .15s;
+}
+.rb-confirm-ok:hover { background: #cf9236; }
+
+
+/* ── 左右两列奖励布局 ── */
+.rb-lr-wrap { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+.rb-lr-col { min-width:0; }
+.rb-lr-head {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 6px; background:#f5f7fa;
+  border-top:1px solid #ebeef5; border-bottom:1px solid #ebeef5;
+  font-size:12px; font-weight:500; color:#606266;
+}
+.rb-lr-row {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 6px; border-bottom:1px solid #f0f2f5;
+}
+.rb-lr-row:hover { background:#fafafa; }
+.rb-lr-th { flex:1; min-width:0; }
+.rb-lr-th-no { flex:0 0 28px; text-align:center; }
+.rb-lr-th-del { flex:0 0 20px; }
+.rb-lr-no { flex:0 0 28px; text-align:center; font-size:13px; color:#606266; font-weight:500; }
+.rb-lr-inp { flex:1; min-width:0; }
+.rb-lr-inp .el-input { width:100%; }
+.rb-lr-del { flex:0 0 20px; display:flex; align-items:center; justify-content:center; }
+
+
+/* ── 充值次数左右两列网格 ── */
+.rb-tiers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.rb-tier-half { margin-bottom: 0 !important; }
+@media (max-width: 700px) {
+  .rb-tiers-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ── 充值次数内部紧凑表格 ── */
+.rb-tier-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.rb-tier-tbl th {
+  padding: 7px 6px;
+  background: #f5f7fa;
+  font-size: 12px; font-weight: 500; color: #606266;
+  text-align: left;
+  border-top: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.rb-tier-tbl td {
+  padding: 5px 6px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+}
+.rb-tier-tbl tr:last-child td { border-bottom: none; }
+.rb-tier-tbl tr:hover td { background: #fafafa; }
+.rb-tier-tbl .el-input { width: 100%; }
+.rb-tier-tbl .el-input__wrapper { padding: 0 6px; }
+.rt-no  { width: 32px; text-align: center; }
+.rt-del { width: 24px; }
+.rt-no-val  { text-align: center; font-size: 13px; color: #606266; font-weight: 500; }
+.rt-del-val { text-align: center; }
+
+
+/* ── 笔笔存/每日首存 外边框卡片 ── */
+.rb-sub-card {
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+/* 紧凑输入框 */
+.rb-tier-tbl .el-input__wrapper { padding: 0 4px !important; }
+.rb-tier-tbl .el-input__inner { font-size: 12px; height: 28px; }
+
+/* ── 阶梯递增校验：错误标红 ── */
+.rb-tier-tbl tr.is-invalid-row td { background: #fef0f0 !important; }
+.rb-tier-tbl tr.is-invalid-row .el-input__wrapper {
+  box-shadow: 0 0 0 1px #f56c6c inset !important;
+  background: #fff5f5 !important;
+}
+.rb-tier-row-err {
+  font-size: 12px; color: #f56c6c;
+  padding: 4px 8px; background: #fef0f0;
+  border-left: 3px solid #f56c6c; border-radius: 2px;
+  margin-top: 6px;
+}
+.rb-section-err-banner {
+  font-size: 12px; color: #f56c6c;
+  padding: 8px 12px; background: #fef0f0;
+  border-left: 3px solid #f56c6c; border-radius: 4px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+
+/* ── 累积充值：等级配置表 ── */
+.cum-tbl-wrap { overflow-x: auto; }
+.cum-tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+.cum-tbl th {
+  padding: 9px 10px; background: #f5f7fa; font-size: 12px; font-weight: 500;
+  color: #606266; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid #ebeef5; border-top: 1px solid #ebeef5;
+}
+.cum-tbl th:first-child { text-align: center; width: 56px; }
+.cum-tbl th:last-child  { width: 56px; text-align: center; }
+.cum-tbl td { padding: 8px 10px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+.cum-tbl td:first-child { text-align: center; font-size: 13px; color: #606266; font-weight: 500; }
+.cum-tbl td:last-child  { text-align: center; }
+.cum-tbl tr:last-child td { border-bottom: none; }
+.cum-tbl tr:hover td { background: #fafafa; }
+.cum-tbl .el-input { width: 100%; }
+.cum-lv-tag {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; height: 22px; padding: 0 8px; border-radius: 11px;
+  background: #ecf5ff; color: #409eff; font-size: 12px; font-weight: 500;
+}
+
+/* 等级名称小色块（与前端展示等级色对应，仅作可视识别） */
+.cum-lv-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 6px; vertical-align: middle; border: 1px solid rgba(0,0,0,.08);
+}
+
+/* 累积充值小标签 */
+.cum-hint-line {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font-size:12px; color:#909399; margin-bottom:8px;
+}
+.cum-hint-line .cum-hint-key { color:#606266; }
+
+/* 累积充值 — 周期/领取/发放等小配置卡片头 */
+.cum-mini-card {
+  border:1px solid #ebeef5; border-radius:6px; overflow:hidden; background:#fff;
+  margin-bottom:12px;
+}
+.cum-mini-hd {
+  padding:9px 14px; background:#f5f7fa; border-bottom:1px solid #ebeef5;
+  display:flex; align-items:center; gap:8px;
+}
+.cum-mini-title { font-size:13px; font-weight:600; color:#303133; }
+.cum-mini-body { padding:14px 16px; }
+
+/* 行内分隔小竖线 */
+.cum-inline-sep { width:1px; height:14px; background:#e4e7ed; margin:0 6px; }
+
+
+/* ── 分享转盘 奖励配置 ── */
+.spin-tbl { width:100%; border-collapse:collapse; min-width:760px; }
+.spin-tbl th {
+  padding:9px 8px; background:#f5f7fa; font-size:12px; font-weight:500;
+  color:#606266; text-align:left; white-space:nowrap;
+  border-bottom:1px solid #ebeef5; border-top:1px solid #ebeef5;
+}
+.spin-tbl th:first-child { text-align:center; width:40px; }
+.spin-tbl td { padding:7px 8px; border-bottom:1px solid #f0f2f5; vertical-align:middle; }
+.spin-tbl td:first-child { text-align:center; font-size:13px; color:#606266; font-weight:500; }
+.spin-tbl tr:last-child td { border-bottom:none; }
+.spin-tbl tr:hover td { background:#fafafa; }
+.spin-prob-bar {
+  display:inline-flex; align-items:center; gap:10px;
+  font-size:13px; color:#606266; margin-top:10px;
+  padding:8px 14px; border-radius:4px;
+  background:#f5f7fa; border:1px solid #ebeef5;
+}
+.spin-prob-bar.is-ok  { background:#f0f9eb; border-color:#e1f3d8; color:#67c23a; }
+.spin-prob-bar.is-err { background:#fef0f0; border-color:#fbc4c4; color:#f56c6c; }
+.spin-task-chk {
+  display:inline-flex; align-items:center; gap:5px;
+  cursor:pointer; font-size:13px; color:#606266; white-space:nowrap;
+}
+
+/* 抽奖次数配置表格 */
+.spin-task-tbl { width:100%; border-collapse:collapse; min-width:640px; }
+.spin-task-tbl th {
+  padding:9px 10px; background:#303133; font-size:12px; font-weight:500;
+  color:#fff; text-align:left; white-space:nowrap;
+}
+.spin-task-tbl th:first-child { text-align:center; width:44px; }
+.spin-task-tbl td { padding:7px 10px; border-bottom:1px solid #f0f2f5; vertical-align:middle; }
+.spin-task-tbl td:first-child { text-align:center; font-size:13px; color:#606266; font-weight:500; }
+.spin-task-tbl tr:last-child td { border-bottom:none; }
+.spin-task-tbl tr:hover td { background:#fafafa; }
+.spin-sort-grp { display:inline-flex; align-items:center; gap:8px; font-size:12px; }
+.spin-sort-grp a { color:#409eff; cursor:pointer; text-decoration:none; }
+.spin-sort-grp a.disabled { color:#c0c4cc; pointer-events:none; }
+.spin-file-row { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.spin-file-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 10px; background:#f0f6ff; border:1px solid #d9ecff;
+  border-radius:4px; font-size:12px; color:#409eff;
+}
+
+</style>
+</head>
+<body>
+
+<!-- 列表页 -->
+<div id="list-page">
+  <div class="pg-header">
+    <span class="pg-logo">🎰 ADMIN</span>
+    <span class="pg-nav">活动福利 / <b>活动列表</b></span>
+  </div>
+  <div class="pg-main">
+    <div class="pg-card">
+      <div class="pg-card-head">
+        <span class="pg-card-title">活动列表</span>
+        <el-button type="primary" @click="openDlg">＋ 新增活动</el-button>
+      </div>
+      <table class="list-table">
+        <thead>
+          <tr><th>ID</th><th>活动名称</th><th>活动类型</th><th>开始时间</th><th>结束时间</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in rows" :key="r.id">
+            <td>{{ r.id }}</td><td>{{ r.name }}</td><td>{{ r.type }}</td>
+            <td>{{ r.start }}</td><td>{{ r.end }}</td>
+            <td><span class="badge" :class="r.on?'badge-on':'badge-off'">{{ r.on?'进行中':'已结束' }}</span></td>
+            <td>
+              <span class="op-link" @click="openDlg">编辑</span>
+              <span class="op-danger">删除</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 遮罩 + 弹窗 -->
+<div class="overlay" id="overlay" @click.self="closeDlg">
+  <div class="dlg">
+
+    <!-- 头部 -->
+    <div class="dlg-hd">
+      <span class="dlg-title">新增活动</span>
+      <button class="dlg-close" @click="closeDlg">✕</button>
+    </div>
+
+    <!-- 可滚动表单（含活动类型，随内容滚动） -->
+    <div class="dlg-body">
+
+      <!-- 活动类型按钮组 -->
+      <div class="dlg-type">
+        <span class="dlg-type-label">活动类型：</span>
+        <button v-for="t in typeOpts" :key="t.v" class="type-btn" :class="{on:activeType===t.v}" @click="activeType=t.v">
+          <span class="dot"></span>{{ t.l }}
+        </button>
+      </div>
+
+      <!-- ① 基本信息 -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-bar"></span><span class="sec-title">基本信息</span></div>
+        <div class="sec-body">
+
+          <div class="frow">
+            <span class="flabel req">标签</span>
+            <div class="fval" style="padding-top:5px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px">
+                <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:#606266">
+                  <input type="checkbox"
+                    :checked="form.category.length === catOpts.length"
+                    :indeterminate.prop="form.category.length > 0 && form.category.length < catOpts.length"
+                    @change="v => v.target.checked ? form.category.splice(0,form.category.length,...catOpts) : form.category.splice(0)"
+                    style="width:14px;height:14px;accent-color:#409eff;cursor:pointer">
+                  全选
+                </label>
+                <span style="width:1px;height:14px;background:#dcdfe6;display:inline-block"></span>
+                <label v-for="c in catOpts" :key="c"
+                  style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:#606266">
+                  <input type="checkbox"
+                    :checked="form.category.includes(c)"
+                    @change="v => v.target.checked ? form.category.push(c) : form.category.splice(form.category.indexOf(c),1)"
+                    style="width:14px;height:14px;accent-color:#409eff;cursor:pointer">
+                  {{ c }}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel req">币种</span>
+            <div class="fval">
+              <el-select v-model="form.currency" placeholder="请选择币种" style="width:100%;max-width:520px">
+                <el-option v-for="c in currOpts" :key="c" :value="c" :label="c"/>
+              </el-select>
+            </div>
+          </div>
+
+          <div class="frow" v-if="form.langs.length">
+            <span class="flabel">语言</span>
+            <div class="fval">
+              <div class="lang-tabs" style="margin-bottom:14px">
+                <div v-for="lv in form.langs" :key="lv" class="lang-tab" :class="{active:activeLang===lv}" @click="activeLang=lv">
+                  <span>{{ langFlag(lv) }}</span><span>{{ langLabel(lv) }}</span>
+                </div>
+              </div>
+              <div class="frow" style="margin-bottom:10px">
+                <span class="flabel req" style="width:76px">名称</span>
+                <div class="fval">
+                  <el-input v-model="form.langContent[activeLang].name" placeholder="请输入名称" maxlength="100" show-word-limit style="max-width:460px"/>
+                  <div class="fhint">最多50字符</div>
+                </div>
+              </div>
+              <div class="frow" style="margin-bottom:0">
+                <span class="flabel" style="width:76px">副标题</span>
+                <div class="fval">
+                  <el-input v-model="form.subtitle[activeLang]" placeholder="请输入副标题..." maxlength="100" show-word-limit style="max-width:460px"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel req">展示时间
+              <el-tooltip effect="dark" placement="top" :show-after="100">
+                <template #content>
+                  展示时间必须完整包含活动起止时间：<br>
+                  展示开始 ≤ 起止开始，展示结束 ≥ 起止结束<br><br>
+                  例：起止时间 5月1日→5月31日，<br>
+                  则展示时间须从 ≤ 5月1日开始，≥ 5月31日结束<br>
+                  （如展示4月25日→6月5日，即可覆盖整个起止时间）
+                </template>
+                <span class="q">?</span>
+              </el-tooltip>
+            </span>
+            <div class="fval">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <div class="time-picker-wrap">
+                  <div v-if="!form.displayPermanent" style="display:contents">
+                    <el-date-picker v-model="form.displayTimeRange" type="datetimerange" range-separator="→" start-placeholder="选择开始时间" end-placeholder="选择结束时间" value-format="YYYY-MM-DD HH:mm:ss" @change="validateTimeRange" style="width:100%;border:none;box-shadow:none"/>
+                  </div>
+                  <div v-else class="is-disabled" style="display:flex;align-items:center;background:#f5f7fa;border:1px solid #e4e7ed;border-radius:4px;padding:0 12px;height:38px;gap:8px;width:100%;box-sizing:border-box">
+                    <span style="font-size:13px;color:#303133;flex:1">{{ form.displayTimeRange && form.displayTimeRange[0] || '' }}</span>
+                    <span style="color:#909399;font-size:13px;padding:0 8px">→</span>
+                    <span style="font-size:13px;color:#c0c4cc;flex:1;text-align:right">长期</span>
+                  </div>
+                </div>
+                <button class="perm-btn" :class="{active:form.displayPermanent}" @click.prevent="onToggleDisplayPermanent">
+                  <span class="perm-check">{{ form.displayPermanent ? '✓' : '' }}</span>长期
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel req">起止时间</span>
+            <div class="fval">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <div class="time-picker-wrap">
+                  <div v-if="!form.activePermanent" style="display:contents">
+                    <el-date-picker v-model="form.activeTimeRange" type="datetimerange" range-separator="→" start-placeholder="选择开始时间" end-placeholder="选择结束时间" value-format="YYYY-MM-DD HH:mm:ss" @change="validateTimeRange" style="width:100%;border:none;box-shadow:none"/>
+                  </div>
+                  <div v-else class="is-disabled" style="display:flex;align-items:center;background:#f5f7fa;border:1px solid #e4e7ed;border-radius:4px;padding:0 12px;height:38px;gap:8px;width:100%;box-sizing:border-box">
+                    <span style="font-size:13px;color:#303133;flex:1">{{ form.activeTimeRange && form.activeTimeRange[0] || '' }}</span>
+                    <span style="color:#909399;font-size:13px;padding:0 8px">→</span>
+                    <span style="font-size:13px;color:#c0c4cc;flex:1;text-align:right">长期</span>
+                  </div>
+                </div>
+                <button class="perm-btn" :class="{active:form.activePermanent}" @click.prevent="onToggleActivePermanent">
+                  <span class="perm-check">{{ form.activePermanent ? '✓' : '' }}</span>长期
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="timeRangeErr.msg" class="frow" style="margin-top:-8px">
+            <span class="flabel"></span>
+            <div class="fval"><span style="font-size:12px;color:#f56c6c">{{ timeRangeErr.msg }}</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ② 参与会员 -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-bar"></span><span class="sec-title">参与会员</span></div>
+        <div class="sec-body" style="padding-bottom:0">
+
+          <div class="frow" style="margin-bottom:0">
+            <span class="flabel req">参与会员
+              <el-tooltip effect="dark" placement="top" :show-after="100">
+                <template #content>
+                  单选，决定哪些用户可参与本活动：<br>
+                  · 全部会员：所有已注册用户<br>
+                  · 新会员：活动开始后注册的用户<br>
+                  · 指定渠道 / 代理 / 会员ID / 手机号 / 层级：精准定向<br>
+                  不满足条件的用户不可见活动入口、不可参与、不可领取奖励
+                </template>
+                <span class="q">?</span>
+              </el-tooltip>
+            </span>
+            <div class="fval">
+              <div style="display:flex;flex-wrap:wrap;gap:0 24px;line-height:2.4">
+                <el-radio v-model="form.memberScope" value="all">全部会员</el-radio>
+                <el-radio v-model="form.memberScope" value="new">活动开始后注册的新会员</el-radio>
+                <el-radio v-model="form.memberScope" value="channel" disabled><span style="color:#c0c4cc">指定渠道</span></el-radio>
+                <el-radio v-model="form.memberScope" value="agent">指定代理</el-radio>
+                <el-radio v-model="form.memberScope" value="id">指定会员ID</el-radio>
+                <el-radio v-model="form.memberScope" value="phone">指定手机号码</el-radio>
+                <el-radio v-model="form.memberScope" value="level" :disabled="activeType !== 'signin'">指定层级<span v-if="activeType !== 'signin'" style="font-size:11px;color:#c0c4cc;margin-left:4px">（仅签到）</span></el-radio>
+              </div>
+            </div>
+          </div>
+
+          <!-- 指定渠道 -->
+          <div class="mem-sub" v-if="form.memberScope==='channel'">
+            <div class="mem-hint">请输入渠道ID，使用分号（;）分隔</div>
+            <el-input v-model="form.memberChannel" placeholder="请输入" style="width:100%"/>
+          </div>
+
+          <!-- 指定代理 -->
+          <div class="mem-sub" v-if="form.memberScope==='agent'">
+            <div class="mem-2col">
+              <div class="mem-left">
+                <div style="font-size:13px;color:#606266;margin-bottom:6px">代理类型：</div>
+                <el-radio v-model="form.agentType" value="direct">代理+直属玩家</el-radio>
+                <el-radio v-model="form.agentType" value="tree">整个代理树</el-radio>
+              </div>
+              <div class="mem-right">
+                <div style="font-size:13px;color:#606266">代理：<span class="mem-hint" style="display:inline">请输入代理时，使用分号（;）来做代理之间的分隔</span></div>
+                <el-input v-model="form.memberAgent" placeholder="请输入" style="width:100%"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- 指定会员ID -->
+          <div class="mem-sub" v-if="form.memberScope==='id'">
+            <div class="frow" style="margin-bottom:10px">
+              <span class="flabel req" style="width:84px">指定UID</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.idInputMode" value="fill">填写UID</el-radio>
+                  <el-radio v-model="form.idInputMode" value="upload">批量上传</el-radio>
+                </div>
+              </div>
+            </div>
+            <div v-if="form.idInputMode==='fill'">
+              <div class="mem-hint">请输入UID，使用分号（;）来做UID之间的分隔</div>
+              <el-input v-model="form.memberIds" placeholder="请输入" style="width:100%"/>
+            </div>
+            <div v-if="form.idInputMode==='upload'">
+              <el-button type="primary" @click="openUpDlg('id')">上传</el-button>
+              <div v-if="form.idUploadedFile" style="font-size:13px;color:#606266;margin-top:8px">已上传文件: {{ form.idUploadedFile }}</div>
+            </div>
+          </div>
+
+          <!-- 指定手机号码 -->
+          <div class="mem-sub" v-if="form.memberScope==='phone'">
+            <div class="frow" style="margin-bottom:10px">
+              <span class="flabel req" style="width:104px">指定手机号码</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.phoneInputMode" value="fill">填写手机</el-radio>
+                  <el-radio v-model="form.phoneInputMode" value="upload">批量上传</el-radio>
+                </div>
+              </div>
+            </div>
+            <div v-if="form.phoneInputMode==='fill'">
+              <div class="mem-hint">请输入手机号，使用分号（;）来做手机号之间的分隔</div>
+              <el-input v-model="form.memberPhones" placeholder="请输入" style="width:100%"/>
+            </div>
+            <div v-if="form.phoneInputMode==='upload'">
+              <el-button type="primary" @click="openUpDlg('phone')">上传</el-button>
+              <div v-if="form.phoneUploadedFile" style="font-size:13px;color:#606266;margin-top:8px">已上传文件: {{ form.phoneUploadedFile }}</div>
+            </div>
+          </div>
+
+          <!-- 指定层级 -->
+          <div class="mem-sub" v-if="form.memberScope==='level'">
+            <div class="frow" style="margin-bottom:10px">
+              <span class="flabel" style="width:68px">适用层级：</span>
+              <div class="fval">
+                <el-checkbox v-model="form.levelSelectAll" @change="onLevelSelectAll">全选</el-checkbox>
+              </div>
+            </div>
+            <div class="level-grid">
+              <el-checkbox v-for="lv in form.levelOptions" :key="lv" v-model="form.levelChecked[lv]" @change="onLevelCheck">{{ lv }}</el-checkbox>
+            </div>
+            <div style="height:10px"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ③ 奖励配置 -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-bar"></span><span class="sec-title">奖励配置</span></div>
+        <div class="sec-body">
+
+          <!-- 无通道提示 -->
+          <div class="rb-no-channel" v-if="form.noChannel">
+            <span class="rb-no-channel-icon">⚙️</span>
+            <span>该币种暂无可用充值通道，无法配置该活动</span>
+          </div>
+
+          <template v-if="!form.noChannel && activeType !== 'cumulative' && activeType !== 'signin' && activeType !== 'redpacket' && activeType !== 'vipday' && activeType !== 'luckyspinner'">
+
+            <!-- ─── 派发方式（顶部，共用配置） ─── -->
+            <div class="frow">
+              <span class="flabel req">派发方式
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    决定用户完成活动条件后，奖励以何种形式发放：<br>
+                    · 玩家自领-过期作废：手动领取，逾期作废不补发<br>
+                    · 玩家自领-过期自动派发：手动领取，逾期系统自动发放至钱包<br>
+                    · 系统自动派发：达成条件后立即自动发放，无需操作
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumDispatchMode" value="manual_void">玩家自领-过期作废</el-radio>
+                  <el-radio v-model="form.cumDispatchMode" value="manual_auto">玩家自领-过期自动派发</el-radio>
+                  <el-radio v-model="form.cumDispatchMode" value="system_auto">系统自动派发</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto'">
+              <span class="flabel req">领取时间
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    决定用户何时可以开始领取奖励：<br>
+                    · 次日领取：达成条件后，次日指定时间点才可领取<br>
+                    · 实时领取：达成条件后立即可领取（实时结算）
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumClaimTimeMode" value="nextDay">次日领取</el-radio>
+                  <el-radio v-model="form.cumClaimTimeMode" value="realtime">实时领取</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="(form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto') && form.cumClaimTimeMode==='nextDay'">
+              <span class="flabel req">选择时间</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <el-time-picker v-model="form.cumClaimTime" format="HH:mm" value-format="HH:mm" placeholder="00:00" style="width:140px"/>
+                  <span style="font-size:13px;color:#606266">以后可领取</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto'">
+              <span class="flabel req" style="white-space:nowrap">奖励领取过期天数
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    奖励的有效领取期限，从充值成功时间开始计算：<br>
+                    过期时间 = 充值成功时间 + 过期天数 × 24h<br>
+                    示例：05-20 14:00 充值，过期1天→05-21 14:00 过期
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <el-input-number v-model="form.giftClaimExpireDays" :min="1" :max="365" :step="1" controls-position="right" style="width:160px"/>
+                  <span style="font-size:13px;color:#606266">天</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow">
+              <span class="flabel">人工审核</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumManualReview" value="yes">需要</el-radio>
+                  <el-radio v-model="form.cumManualReview" value="no">不需要</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分隔线 -->
+            <div style="height:1px;background:#ebeef5;margin:4px 0 18px"></div>
+
+            <!-- 奖励配置 — Section 级错误提示条（阶梯递增校验失败时显示） -->
+            <div v-if="hasAnyTierError" class="rb-section-err-banner" id="reward-config-anchor">
+              <span style="font-size:14px">⚠️</span>
+              <span>奖励配置存在错误，请检查后提交（共 {{ totalTierErrorCount }} 处违规）</span>
+            </div>
+
+            <!-- 循环配置 -->
+            <div class="frow">
+              <span class="flabel req">循环配置</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.giftCycleType" value="none">不循环</el-radio>
+                  <el-radio v-model="form.giftCycleType" value="daily" @change="form.dailyFirstEnabled=false">日循环</el-radio>
+                  <el-radio v-model="form.giftCycleType" value="weekly">周循环</el-radio>
+                  <el-radio v-model="form.giftCycleType" value="monthly">月循环</el-radio>
+                  <el-radio v-model="form.giftCycleType" value="custom">自定义</el-radio>
+                </div>
+                <div v-if="form.giftCycleType==='custom'" style="display:flex;align-items:center;gap:8px;margin-top:8px">
+                  <span style="font-size:13px;color:#606266">每</span>
+                  <el-input-number v-model="form.giftCycleDays" :min="2" :max="365" :step="1" controls-position="right" style="width:130px"/>
+                  <span style="font-size:13px;color:#606266">天重置一次充值次数计数</span>
+                </div>
+                <div class="fhint" v-if="form.giftCycleType==='none'">充值次数在整个活动周期内累计计算，不重置</div>
+                <div class="fhint" v-if="form.giftCycleType==='daily'">每自然日 00:00 重置充值次数计数，用户每天可重新享受充值次数奖励</div>
+                <div class="fhint" v-if="form.giftCycleType==='weekly'">每周一 00:00 重置充值次数计数，用户每周可重新享受充值次数奖励</div>
+                <div class="fhint" v-if="form.giftCycleType==='monthly'">每月 1 日 00:00 重置充值次数计数，用户每月可重新享受充值次数奖励</div>
+                <div class="fhint" v-if="form.giftCycleType==='custom'">按自定义天数周期重置充值次数计数，从活动开始时间起算</div>
+              </div>
+            </div>
+
+            <!-- 稽核配置 —— 与奖励配置同级 frow -->
+            <div class="frow" style="margin-bottom:14px">
+              <span class="flabel">稽核配置</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="mul" style="margin-right:0">稽核倍数</el-radio>
+                    <el-input-number v-if="form.auditMode==='mul'" v-model="form.auditMulVal" :min="0.01" :max="99" :step="0.01" :precision="2" controls-position="right" size="small" style="width:120px"/>
+                    <span v-if="form.auditMode==='mul'" style="font-size:12px;color:#909399">倍</span>
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="amt" style="margin-right:0">稽核金额</el-radio>
+                    <span v-if="form.auditMode==='amt'" style="font-size:12px;color:#909399">按档位在奖励配置表格中填写</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 奖励配置 frow -->
+            <div class="frow">
+              <span class="flabel req">奖励配置</span>
+              <div class="fval" style="position:relative">
+
+                <!-- 恢复初始配置 按钮 — 右上角 -->
+                <button class="rb-reset-btn" style="position:absolute;top:0;right:0;z-index:1"
+                        @click.prevent="confirmResetReward">
+                  <span style="font-size:13px">↺</span> 恢复初始配置
+                </button>
+
+                <!-- 奖励金额类型：全局共用 -->
+                <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
+                  <span style="font-size:13px;color:#606266;flex-shrink:0">奖励金额类型：</span>
+                  <div class="rb-amt-type">
+                    <button class="rb-amt-type-btn" :class="{active: form.globalAmtType==='fixed'}"
+                            @click.prevent="form.globalAmtType='fixed';validateAllTiers()">固定金额</button>
+                    <button class="rb-amt-type-btn" :class="{active: form.globalAmtType==='pct'}"
+                            @click.prevent="form.globalAmtType='pct';validateAllTiers()">比例金额</button>
+                  </div>
+                  <span style="font-size:12px;color:#909399">
+                    {{ form.globalAmtType==='fixed' ? '奖励金额 = 纯奖励金额（不含充值本金），按档位固定配置，所有次数共用' : '奖励金额 = 充值金额 × 奖励比例%（纯奖励，不含充值本金），所有次数共用' }}
+                  </span>
+                </div>
+
+
+                <!-- 每个充值次数 tier — 左右两列 -->
+                <div class="rb-tiers-grid">
+                <div v-for="(tier, ti) in form.rewardTiers" :key="ti" class="rb-section rb-tier-half">
+                  <div class="rb-section-hd">
+                    <span class="rb-section-title">
+                      第 {{ tier.times }} 笔充值
+                      <span style="font-size:12px;color:#909399;font-weight:400;margin-left:6px">{{ tierLabel(tier.times) }}</span>
+                    </span>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="rb-section-badge">{{ tier.rows.length }} 档</span>
+                      <el-button type="danger" link size="small"
+                                 v-if="form.rewardTiers.length > 1"
+                                 @click="removeTier(ti)">删除该次数</el-button>
+                    </div>
+                  </div>
+                  <div class="rb-section-body">
+                    <!-- 单列表格 -->
+                    <table class="rb-tier-tbl">
+                      <thead>
+                        <tr>
+                          <th class="rt-no">序号</th>
+                          <th>充值金额</th>
+                          <th v-if="form.globalAmtType==='fixed'">奖励金额</th>
+                          <th v-if="form.globalAmtType==='pct'">奖励比例</th>
+                          <th v-if="form.auditMode==='amt'">稽核金额</th>
+                          <th class="rt-del"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, ri) in tier.rows" :key="ri" :class="{'is-invalid-row': isTierRowInvalid(ti, ri)}">
+                          <td class="rt-no-val">{{ ri + 1 }}</td>
+                          <td><el-input v-model="row.depositAmt" placeholder="金额" size="small" @input="clampField(row,'depositAmt',$event)" @blur="validateTierStep(ti)" @change="validateTierStep(ti)"><template #prefix><span style="color:#909399;font-size:11px">≥</span></template></el-input></td>
+                          <td v-if="form.globalAmtType==='fixed'"><el-input v-model="row.actualAmt" placeholder="奖励金额" size="small" @input="clampField(row,'actualAmt',$event)" @blur="validateTierStep(ti)" @change="validateTierStep(ti)"></el-input></td>
+                          <td v-if="form.globalAmtType==='pct'"><el-input v-model="row.pctAmt" placeholder="比例" size="small" @input="clampField(row,'pctAmt',$event)" @blur="validateTierStep(ti)" @change="validateTierStep(ti)"><template #suffix><span style="color:#909399;font-size:11px">%</span></template></el-input></td>
+                          <td v-if="form.auditMode==='amt'"><el-input v-model="row.auditAmt" :placeholder="String(form.globalAmtType==='fixed'?(row.actualAmt||''): (row.pctAmt||''))" size="small" @focus="fillAuditAmt(row)" @input="clampField(row,'auditAmt',$event)"></el-input></td>
+                          <td class="rt-del-val">
+                            <span v-if="tier.rows.length > 8" class="rb-tbl-del" @click="removeTierRow(ti, ri)">×</span>
+                            <span v-else style="color:#e0e3e8;font-size:15px">×</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <!-- 行级错误提示 -->
+                    <div v-if="tierErrors[ti] && tierErrors[ti].length" style="margin-top:6px">
+                      <div v-for="(msg, mi) in tierErrors[ti]" :key="mi" class="rb-tier-row-err">{{ msg }}</div>
+                    </div>
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                      <button class="rb-tbl-add" v-if="tier.rows.length < 50" @click.prevent="addTierRow(ti)">＋ 新增档位</button>
+                      <span v-else style="font-size:12px;color:#f56c6c">已达上限（50 档）</span>
+                      <span style="font-size:12px;color:#909399">{{ tier.rows.length }} / 50 档（最少 8 档）</span>
+                    </div>
+                  </div>
+                </div>
+                </div><!-- /rb-tiers-grid -->
+
+                <!-- 增加次数 按钮 -->
+                <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <button class="rb-tbl-add"
+                          v-if="form.rewardTiers.length < 20"
+                          @click.prevent="addTier"
+                          style="border-color:#67c23a;color:#67c23a;background:#f0f9eb">
+                    ＋ 增加次数
+                  </button>
+                  <span v-else style="font-size:12px;color:#f56c6c">已达上限（20 次）</span>
+                  <span style="font-size:12px;color:#909399">已配置 {{ form.rewardTiers.length }} / 20 次（最少 1 次，上限 20 次）</span>
+                </div>
+
+                <!-- 恢复初始配置 确认弹窗 -->
+                <div class="rb-confirm-mask" v-if="showResetConfirm" @click.self="showResetConfirm=false">
+                  <div class="rb-confirm-box">
+                    <div class="rb-confirm-hd">
+                      <span class="rb-confirm-icon">⚠️</span>
+                      <span class="rb-confirm-title">恢复初始配置</span>
+                    </div>
+                    <div class="rb-confirm-body">
+                      <p>确认将奖励配置恢复为初始默认数据？</p>
+                      <p style="font-size:12px;color:#909399;margin-top:8px">
+                        此操作将清空当前所有充值次数配置、笔笔存/笔笔送、每日首存的档位数据，恢复为系统默认的 5 次 × 8 档配置（充值次数最多 20 次，每次最多 50 档），不可撤销。
+                      </p>
+                    </div>
+                    <div class="rb-confirm-ft">
+                      <button class="rb-confirm-cancel" @click.prevent="showResetConfirm=false">取 消</button>
+                      <button class="rb-confirm-ok" @click.prevent="doResetReward">确认恢复</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 优先顺序说明 -->
+            <div class="frow">
+              <span class="flabel"></span>
+              <div class="fval">
+                <div style="background:#f5f7fa;border-radius:6px;padding:12px 14px;font-size:12px;color:#606266">
+                  <div style="font-weight:600;color:#303133;margin-bottom:8px">
+                    充值奖励优先顺序（高 → 低）
+                    <span style="font-weight:400;color:#909399;font-size:11px;margin-left:8px">当前：
+                      <strong style="color:#409eff">
+                        <span v-if="form.giftCycleType==='none'">不循环</span>
+                        <span v-if="form.giftCycleType==='daily'">日循环</span>
+                        <span v-if="form.giftCycleType==='weekly'">周循环</span>
+                        <span v-if="form.giftCycleType==='monthly'">月循环</span>
+                        <span v-if="form.giftCycleType==='custom'">自定义 {{ form.giftCycleDays }} 天</span>
+                      </strong>
+                    </span>
+                  </div>
+
+                  <div style="line-height:2">
+                    <div>① <strong style="color:#f56c6c">周期首充</strong> — 每周期第 1 笔充值（<span v-if="form.giftCycleType==='none'">活动期唯一一次</span><span v-if="form.giftCycleType==='daily'">每天重置</span><span v-if="form.giftCycleType==='weekly'">每周一重置</span><span v-if="form.giftCycleType==='monthly'">每月1日重置</span><span v-if="form.giftCycleType==='custom'">每 {{ form.giftCycleDays }} 天重置</span>）</div>
+                    <div v-if="form.giftCycleType!=='daily'">② <strong style="color:#e6a23c">每日首存</strong> — 每日第 1 笔且非本周期首充，占用一次阶梯位置</div>
+                    <div v-else style="color:#c0c4cc;text-decoration:line-through">② 每日首存 — 日循环下不触发（每日第1笔已被周期首充占据）</div>
+                    <div><span v-if="form.giftCycleType!=='daily'">③</span><span v-else>②</span> <strong style="color:#409eff">阶梯奖励</strong> — 按周期内充值顺序：二存→三存→四存……<span v-if="form.giftCycleType==='none'">（不重置）</span><span v-else>（每周期重置）</span></div>
+                    <div><span v-if="form.giftCycleType!=='daily'">④</span><span v-else>③</span> <strong style="color:#67c23a">笔笔存，笔笔送</strong> — 超出阶梯档位后，每笔充值均享受</div>
+                    <div><span v-if="form.giftCycleType!=='daily'">⑤</span><span v-else>④</span> <strong style="color:#909399">普通充值</strong> — 笔笔送关闭时的兜底，无优惠</div>
+                  </div>
+
+                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid #ebeef5;font-size:11px;color:#909399;line-height:1.7">
+                    · 同一笔充值只命中一个档位；所有充值均计入周期次数<br>
+                    · 每日首存占用一次阶梯位置
+                    <span v-if="form.giftCycleType==='daily'">；日循环下每日首存不生效</span>
+                  </div>
+
+                  <!-- 示例：可展开 -->
+                  <div style="margin-top:10px">
+                    <div style="cursor:pointer;color:#409eff;font-size:11px;display:inline-flex;align-items:center;gap:4px;user-select:none"
+                         @click="form._showPriorityExample=!form._showPriorityExample">
+                      {{ form._showPriorityExample ? '▲ 收起示例' : '▼ 查看示例（最大阶梯=3，笔笔送开启）' }}
+                    </div>
+                    <div v-if="form._showPriorityExample" style="margin-top:8px">
+
+                      <div v-if="form.giftCycleType==='none'">
+                        <div style="font-size:11px;color:#909399;margin-bottom:4px">不循环示例</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px">
+                          <thead><tr style="background:#ebeef5"><th style="padding:4px 8px;text-align:left;font-weight:500">操作</th><th style="padding:4px 8px;text-align:left;font-weight:500">命中奖励</th><th style="padding:4px 8px;text-align:right;font-weight:500">周期次数</th></tr></thead>
+                          <tbody>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">第1天 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#f56c6c">周期首充</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">1</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">第2天 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong>（占第2次）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">2</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">第2天 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯三存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">3</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">第3天 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong>（占第4次）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">4</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">第3天 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#67c23a">笔笔存</strong>（超出3档）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">5</td></tr>
+                            <tr><td style="padding:3px 8px">第4天 第1笔</td><td style="padding:3px 8px"><strong style="color:#e6a23c">每日首存</strong></td><td style="padding:3px 8px;text-align:right">6</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-if="form.giftCycleType==='daily'">
+                        <div style="font-size:11px;color:#909399;margin-bottom:4px">日循环示例</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px">
+                          <thead><tr style="background:#ebeef5"><th style="padding:4px 8px;text-align:left;font-weight:500">操作</th><th style="padding:4px 8px;text-align:left;font-weight:500">命中奖励</th><th style="padding:4px 8px;text-align:right;font-weight:500">当日次数</th></tr></thead>
+                          <tbody>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">当天 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#f56c6c">周期首充</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">1</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">当天 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯二存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">2</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">当天 第3笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯三存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">3</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">当天 第4笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#67c23a">笔笔存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">4</td></tr>
+                            <tr><td style="padding:3px 8px">次日 第1笔</td><td style="padding:3px 8px"><strong style="color:#f56c6c">新周期首充</strong>（重置）</td><td style="padding:3px 8px;text-align:right">1</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-if="form.giftCycleType==='weekly'">
+                        <div style="font-size:11px;color:#909399;margin-bottom:4px">周循环示例（周一起始）</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px">
+                          <thead><tr style="background:#ebeef5"><th style="padding:4px 8px;text-align:left;font-weight:500">操作</th><th style="padding:4px 8px;text-align:left;font-weight:500">命中奖励</th><th style="padding:4px 8px;text-align:right;font-weight:500">本周次数</th></tr></thead>
+                          <tbody>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">周一 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#f56c6c">周期首充</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">1</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">周二 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong>（占第2次）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">2</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">周二 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯三存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">3</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">周三 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong>（超出阶梯仍给首存）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">4</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">周三 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#67c23a">笔笔存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">5</td></tr>
+                            <tr><td style="padding:3px 8px">下周一 第1笔</td><td style="padding:3px 8px"><strong style="color:#f56c6c">新周期首充</strong>（重置）</td><td style="padding:3px 8px;text-align:right">1</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-if="form.giftCycleType==='monthly'">
+                        <div style="font-size:11px;color:#909399;margin-bottom:4px">月循环示例</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px">
+                          <thead><tr style="background:#ebeef5"><th style="padding:4px 8px;text-align:left;font-weight:500">操作</th><th style="padding:4px 8px;text-align:left;font-weight:500">命中奖励</th><th style="padding:4px 8px;text-align:right;font-weight:500">本月次数</th></tr></thead>
+                          <tbody>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#f56c6c">周期首充</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">1</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">2日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">2</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">2日 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯三存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">3</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">3日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">4</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">3日 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#67c23a">笔笔存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">5</td></tr>
+                            <tr><td style="padding:3px 8px">次月1日 第1笔</td><td style="padding:3px 8px"><strong style="color:#f56c6c">新周期首充</strong>（重置）</td><td style="padding:3px 8px;text-align:right">1</td></tr>
+                          </tbody>
+                        </table>
+                        <div style="margin-top:4px;font-size:11px;color:#909399">⚠️ 若1日无充值，2日第1笔即为周期首充，从3日起才触发每日首存</div>
+                      </div>
+
+                      <div v-if="form.giftCycleType==='custom'">
+                        <div style="font-size:11px;color:#909399;margin-bottom:4px">自定义循环示例（{{ form.giftCycleDays }} 天周期，起于1月1日）</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px">
+                          <thead><tr style="background:#ebeef5"><th style="padding:4px 8px;text-align:left;font-weight:500">操作</th><th style="padding:4px 8px;text-align:left;font-weight:500">命中奖励</th><th style="padding:4px 8px;text-align:right;font-weight:500">本期次数</th></tr></thead>
+                          <tbody>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1月1日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#f56c6c">周期首充</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">1</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1月2日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">2</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1月2日 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#409eff">阶梯三存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">3</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1月3日 第1笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#e6a23c">每日首存</strong>（超出阶梯仍给首存）</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">4</td></tr>
+                            <tr><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5">1月3日 第2笔</td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5"><strong style="color:#67c23a">笔笔存</strong></td><td style="padding:3px 8px;border-bottom:1px solid #f0f2f5;text-align:right">5</td></tr>
+                            <tr><td style="padding:3px 8px">新周期 第1笔</td><td style="padding:3px 8px"><strong style="color:#f56c6c">新周期首充</strong>（重置）</td><td style="padding:3px 8px;text-align:right">1</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- 笔笔存/笔笔送 -->
+            <div class="frow">
+              <span class="flabel">笔笔存，笔笔送</span>
+              <div class="fval">
+                <div class="rb-switch-row">
+                  <el-switch v-model="form.perDepositEnabled"/>
+                  <span class="rb-switch-label">{{ form.perDepositEnabled ? '已开启' : '已关闭' }}</span>
+                </div>
+                <div class="fhint" v-if="form.perDepositEnabled">
+                  开启后：优先享受配置的充值次数优惠（1～{{ form.rewardTiers.length }} 笔）；超出后每笔充值均享受笔笔送奖励
+                </div>
+                <div class="fhint" v-else>关闭后：超出配置次数的充值无优惠</div>
+                <div v-if="form.perDepositEnabled" style="margin-top:12px">
+                  <div class="rb-section" style="margin-bottom:0">
+                    <div class="rb-section-hd">
+                      <span class="rb-section-title">笔笔送奖励配置</span>
+                      <span class="rb-section-badge">{{ form.perDepositRows.length }} 档</span>
+                    </div>
+                    <div class="rb-section-body" style="padding:8px 10px 4px">
+                      <table class="rb-tier-tbl">
+                        <thead><tr>
+                          <th class="rt-no">序号</th>
+                          <th>充值金额</th>
+                          <th v-if="form.globalAmtType==='fixed'">奖励金额</th>
+                          <th v-if="form.globalAmtType==='pct'">奖励比例</th>
+                          <th v-if="form.auditMode==='amt'">稽核金额</th>
+                          <th class="rt-del"></th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="(row, ri) in form.perDepositRows" :key="ri" :class="{'is-invalid-row': perDepositErrors[ri]}">
+                            <td class="rt-no-val">{{ ri + 1 }}</td>
+                            <td><el-input v-model="row.depositAmt" placeholder="金额" size="small" @input="clampField(row,'depositAmt',$event)" @blur="validatePerDeposit" @change="validatePerDeposit"><template #prefix><span style="color:#909399;font-size:11px">≥</span></template></el-input></td>
+                            <td v-if="form.globalAmtType==='fixed'"><el-input v-model="row.actualAmt" placeholder="奖励金额" size="small" @input="clampField(row,'actualAmt',$event)"></el-input></td>
+                            <td v-if="form.globalAmtType==='pct'"><el-input v-model="row.pctAmt" placeholder="比例" size="small" @input="clampField(row,'pctAmt',$event)"><template #suffix><span style="color:#909399;font-size:11px">%</span></template></el-input></td>
+                            <td v-if="form.auditMode==='amt'"><el-input v-model="row.auditAmt" :placeholder="String(row.actualAmt||'')" size="small" @focus="fillAuditAmt(row)" @input="clampAuditAmt(row,'auditAmt',$event)"></el-input></td>
+                            <td class="rt-del-val">
+                              <span v-if="form.perDepositRows.length > 8" class="rb-tbl-del" @click="form.perDepositRows.splice(ri, 1)">×</span>
+                              <span v-else style="color:#e0e3e8;font-size:15px">×</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div v-if="Object.keys(perDepositErrors).length" style="margin-top:4px">
+                        <div v-for="(msg, idx) in perDepositErrors" :key="idx" class="rb-tier-row-err">{{ msg }}</div>
+                      </div>
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;padding-bottom:4px">
+                        <button class="rb-tbl-add" v-if="form.perDepositRows.length < 50"
+                                @click.prevent="addPerDepositRow">＋ 新增档位</button>
+                        <span v-else style="font-size:12px;color:#f56c6c">已达上限（20 档）</span>
+                        <span style="font-size:12px;color:#909399">{{ form.perDepositRows.length }} / 50 档（最少 8 档）</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 每日首存 -->
+            <div class="frow">
+              <span class="flabel">每日首存</span>
+              <div class="fval">
+                <div class="rb-switch-row">
+                  <el-switch v-model="form.dailyFirstEnabled" :disabled="form.giftCycleType==='daily'"
+                    @change="v => { if(form.giftCycleType==='daily') form.dailyFirstEnabled=false; }"/>
+                  <span class="rb-switch-label" :style="form.giftCycleType==='daily'?'color:#c0c4cc':''">
+                    {{ form.giftCycleType==='daily' ? '不可用（日循环模式下每日首存不生效）' : (form.dailyFirstEnabled ? '已开启' : '已关闭') }}
+                  </span>
+                  <span class="rb-switch-desc" v-if="form.dailyFirstEnabled && form.giftCycleType!=='daily'">开启后，用户每日首笔充值优先匹配本活动</span>
+                </div>
+                <div v-if="form.giftCycleType==='daily'" style="margin-top:6px;padding:8px 10px;background:#fdf6ec;border-left:3px solid #e6a23c;border-radius:0 4px 4px 0;font-size:12px;color:#906231;line-height:1.7">
+                  日循环模式下，每个自然日都是新的充值周期，每天第 1 笔充值固定触发<strong>「周期首充」</strong>奖励。<br>
+                  因此每日首存与周期首充在同一笔充值上重叠，<strong>每日首存不会再额外触发</strong>，此开关已自动禁用。<br>
+                  如需每日首存功能，请将循环配置切换为<strong>周循环、月循环或自定义</strong>。
+                </div>
+                <!-- 每日首存 奖励配置表格 -->
+                <div v-if="form.dailyFirstEnabled" style="margin-top:12px">
+                  <div class="rb-section" style="margin-bottom:0">
+                    <div class="rb-section-hd">
+                      <span class="rb-section-title">每日首存奖励配置</span>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="rb-section-badge">{{ form.dailyFirstRows.length }} 档</span>
+                        <span style="font-size:11px;color:#909399">单笔限额 {{ form.limitMin.toLocaleString() }} - {{ form.limitMax.toLocaleString() }}</span>
+                      </div>
+                    </div>
+                    <div class="rb-section-body" style="padding:8px 10px 4px">
+                      <table class="rb-tier-tbl">
+                        <thead><tr>
+                          <th class="rt-no">序号</th>
+                          <th>充值金额</th>
+                          <th v-if="form.globalAmtType==='fixed'">奖励金额</th>
+                          <th v-if="form.globalAmtType==='pct'">奖励比例</th>
+                          <th v-if="form.auditMode==='amt'">稽核金额</th>
+                          <th class="rt-del"></th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="(row, ri) in form.dailyFirstRows" :key="ri" :class="{'is-invalid-row': dailyFirstErrors[ri]}">
+                            <td class="rt-no-val">{{ ri + 1 }}</td>
+                            <td><el-input v-model="row.depositAmt" placeholder="金额" size="small" @input="clampField(row,'depositAmt',$event)" @blur="validateDailyFirst" @change="validateDailyFirst"><template #prefix><span style="color:#909399;font-size:11px">≥</span></template></el-input></td>
+                            <td v-if="form.globalAmtType==='fixed'"><el-input v-model="row.actualAmt" placeholder="奖励金额" size="small" @input="clampField(row,'actualAmt',$event)"></el-input></td>
+                            <td v-if="form.globalAmtType==='pct'"><el-input v-model="row.pctAmt" placeholder="比例" size="small" @input="clampField(row,'pctAmt',$event)"><template #suffix><span style="color:#909399;font-size:11px">%</span></template></el-input></td>
+                            <td v-if="form.auditMode==='amt'"><el-input v-model="row.auditAmt" :placeholder="String(row.actualAmt||'')" size="small" @focus="fillAuditAmt(row)" @input="clampAuditAmt(row,'auditAmt',$event)"></el-input></td>
+                            <td class="rt-del-val">
+                              <span v-if="form.dailyFirstRows.length > 8" class="rb-tbl-del" @click="form.dailyFirstRows.splice(ri, 1)">×</span>
+                              <span v-else style="color:#e0e3e8;font-size:15px">×</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div v-if="Object.keys(dailyFirstErrors).length" style="margin-top:4px">
+                        <div v-for="(msg, idx) in dailyFirstErrors" :key="idx" class="rb-tier-row-err">{{ msg }}</div>
+                      </div>
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;padding-bottom:4px">
+                        <button class="rb-tbl-add" v-if="form.dailyFirstRows.length < 50"
+                                @click.prevent="addDailyFirstRow">＋ 新增档位</button>
+                        <span v-else style="font-size:12px;color:#f56c6c">已达上限（20 档）</span>
+                        <span style="font-size:12px;color:#909399">{{ form.dailyFirstRows.length }} / 50 档（最少 8 档）</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            </div>
+
+          </template>
+
+          <!-- ─── 会员日 奖励配置 ─── -->
+          <template v-if="activeType === 'vipday'">
+
+            <!-- 派发方式 -->
+            <div class="frow">
+              <span class="flabel req">派发方式
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    · 玩家自领-过期作废：手动领取，逾期作废不补发<br>
+                    · 玩家自领-过期自动派发：手动领取，逾期系统自动发放至钱包<br>
+                    · 系统自动派发：达成条件后立即自动发放，无需操作
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.vipDispatchMode" value="manual_void">玩家自领-过期作废</el-radio>
+                  <el-radio v-model="form.vipDispatchMode" value="manual_auto" disabled>玩家自领-过期自动派发</el-radio>
+                  <el-radio v-model="form.vipDispatchMode" value="system_auto" disabled>系统自动派发</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <!-- 领取时间（写死） -->
+            <div class="frow" v-if="form.vipDispatchMode==='manual_void' || form.vipDispatchMode==='manual_auto'">
+              <span class="flabel req">领取时间</span>
+              <div class="fval">
+                <span style="font-size:13px;color:#303133;font-weight:500">会员日当天可领取</span>
+                <div class="fhint">活动设置的「每月 N 日」当天开放领取，过期未领按「奖励领取过期」规则处理</div>
+              </div>
+            </div>
+
+            <!-- 奖励过期 -->
+            <div class="frow" v-if="form.vipDispatchMode==='manual_void'||form.vipDispatchMode==='manual_auto'">
+              <span class="flabel req">奖励领取过期</span>
+              <div class="fval">
+                <span style="font-size:13px;color:#303133;font-weight:500">周期结束自动过期</span>
+                <div class="fhint">每个统计周期结束时，当期未领取的奖励自动失效</div>
+              </div>
+            </div>
+
+            <!-- 人工审核 -->
+            <div class="frow">
+              <span class="flabel">人工审核</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.vipManualReview" value="yes" disabled><span style="color:#c0c4cc">需要</span></el-radio>
+                  <el-radio v-model="form.vipManualReview" value="no">不需要</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分隔线 -->
+            <div style="height:1px;background:#ebeef5;margin:4px 0 18px"></div>
+
+            <!-- 稽核配置 -->
+            <div class="frow" style="margin-bottom:14px">
+              <span class="flabel">稽核配置</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.vipAuditMode" value="mul" style="margin-right:0">稽核倍数</el-radio>
+                    <el-input-number v-if="form.vipAuditMode==='mul'" v-model="form.vipAuditMulVal" :min="0.01" :max="99" :step="0.01" :precision="2" controls-position="right" size="small" style="width:120px"/>
+                    <span v-if="form.vipAuditMode==='mul'" style="font-size:12px;color:#909399">倍</span>
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.vipAuditMode" value="amt" style="margin-right:0">稽核金额</el-radio>
+                    <span v-if="form.vipAuditMode==='amt'" style="font-size:12px;color:#909399">按档位在奖励配置表格中填写</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 活动周期 -->
+            <div class="frow">
+              <span class="flabel req">活动周期</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <el-radio model-value="monthly" value="monthly">月循环</el-radio>
+                  <div style="display:flex;align-items:center;gap:6px;margin-left:8px">
+                    <span style="font-size:13px;color:#606266">每月</span>
+                    <el-input-number v-model="form.vipCycleDay" :min="1" :max="28" :step="1" controls-position="right" style="width:110px" size="default"/>
+                    <span style="font-size:13px;color:#606266">日统计上月数据</span>
+                  </div>
+                </div>
+                <div class="fhint">每月指定日统计上月会员的充值/投注数据，符合条件的会员可于当月领取奖励</div>
+              </div>
+            </div>
+
+            <!-- 活动条件 -->
+            <div class="frow">
+              <span class="flabel req">活动条件</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-checkbox v-model="form.vipCondRecharge"/>
+                    <span style="font-size:13px;color:#303133">充值回馈</span>
+                    <el-tooltip effect="dark" placement="top" :show-after="100">
+                      <template #content>
+                        活动说明：每月1号统计上月"活动对象"的总有效充值*对应等级的"充值回馈%"=本月7号可以领取的奖励
+                      </template>
+                      <span class="q">?</span>
+                    </el-tooltip>
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-checkbox v-model="form.vipCondBet"/>
+                    <span style="font-size:13px;color:#303133">投注回馈</span>
+                    <el-tooltip effect="dark" placement="top" :show-after="100">
+                      <template #content>
+                        活动说明：每月1号统计上月"活动对象"的总有效投注*对应等级的"投注返利%"=本月7号可以领取的奖励
+                      </template>
+                      <span class="q">?</span>
+                    </el-tooltip>
+                  </label>
+                </div>
+                <div v-if="!form.vipCondRecharge && !form.vipCondBet" style="margin-top:8px;font-size:12px;color:#f56c6c">至少选择一个活动条件</div>
+              </div>
+            </div>
+
+            <!-- 奖励配置 -->
+            <div class="frow" v-if="form.vipCondRecharge || form.vipCondBet">
+              <span class="flabel req">*奖励设置：</span>
+              <div class="fval">
+                <div>
+
+                  <!-- 合并奖励表格（充值/投注共用同一套 VIP 等级） -->
+                  <div class="rb-section" style="margin-bottom:0;width:100%">
+                    <div class="rb-section-hd">
+                      <span class="rb-section-title">奖励配置</span>
+                      <span class="rb-section-badge">{{ form.vipRows.length }} 个等级</span>
+                    </div>
+                    <div class="rb-section-body" style="padding:0">
+                      <table class="cum-tbl" style="min-width:0;table-layout:fixed;width:100%">
+                        <colgroup>
+                          <col style="width:48px">
+                          <col style="width:120px">
+                          <col v-if="form.vipCondRecharge">
+                          <col v-if="form.vipCondBet">
+                          <col v-if="form.vipAuditMode==='amt'" style="width:100px">
+                          <col style="width:36px">
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th style="text-align:center">序号</th>
+                            <th style="text-align:center">VIP等级数</th>
+                            <th v-if="form.vipCondRecharge">充值回馈%</th>
+                            <th v-if="form.vipCondBet">投注返利%</th>
+                            <th v-if="form.vipAuditMode==='amt'">稽核金额</th>
+                            <th style="text-align:center">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(row, ri) in form.vipRows" :key="ri">
+                            <td style="text-align:center;color:#909399;font-size:12px">{{ ri + 1 }}</td>
+                            <td>
+                              <el-input v-model="row.levelNum" placeholder="10" size="small" style="width:100%" type="number" :min="1" :max="999">
+                                <template #prepend><span style="font-size:12px;color:#606266;padding:0 2px">VIP</span></template>
+                              </el-input>
+                            </td>
+                            <td v-if="form.vipCondRecharge">
+                              <el-input v-model="row.rechargeRate" placeholder="0.1" size="small" style="width:100%">
+                                <template #suffix><span style="color:#909399;font-size:11px">%</span></template>
+                              </el-input>
+                            </td>
+                            <td v-if="form.vipCondBet">
+                              <el-input v-model="row.betRate" placeholder="0.1" size="small" style="width:100%">
+                                <template #suffix><span style="color:#909399;font-size:11px">%</span></template>
+                              </el-input>
+                            </td>
+                            <td v-if="form.vipAuditMode==='amt'">
+                              <el-input v-model="row.auditAmt" placeholder="稽核金额" size="small" style="width:100%"/>
+                            </td>
+                            <td style="text-align:center">
+                              <span v-if="form.vipRows.length > 1" class="rb-tbl-del" @click="form.vipRows.splice(ri,1)">×</span>
+                              <span v-else style="color:#e0e3e8;font-size:15px" title="至少保留 1 行">×</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid #f0f2f5">
+                        <button class="rb-tbl-add" v-if="form.vipRows.length < 50"
+                                @click.prevent="form.vipRows.push({levelNum:'',rechargeRate:'',betRate:'',auditAmt:''})">＋ 新增等级</button>
+                        <span v-else style="font-size:12px;color:#f56c6c">已达上限（50 级）</span>
+                        <span style="font-size:12px;color:#909399">{{ form.vipRows.length }} / 50 级</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+          </template>
+
+          <!-- ─── 签到活动 / 红包雨：奖励配置占位 ─── -->
+          <template v-if="activeType === 'signin' || activeType === 'redpacket'">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;color:#c0c4cc;text-align:center">
+              <div style="font-size:40px">🚧</div>
+              <div style="font-size:14px;font-weight:500;color:#909399">
+                {{ activeType === 'signin' ? '签到活动' : '红包雨' }} · 奖励配置
+              </div>
+              <div style="font-size:13px;color:#c0c4cc;max-width:320px;line-height:1.7">
+                该活动类型的奖励配置正在规划中，内容待补充。
+              </div>
+              <div style="font-size:12px;padding:6px 16px;background:#f5f7fa;border-radius:20px;color:#909399;border:1px dashed #dcdfe6">
+                待定 · 暂缓开发
+              </div>
+            </div>
+          </template>
+
+          <!-- ─── 分享转盘 奖励配置 ─── -->
+          <template v-if="activeType === 'luckyspinner'">
+
+            <!-- 稽核配置 -->
+            <div class="frow" style="margin-bottom:14px">
+              <span class="flabel">稽核配置</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="mul" style="margin-right:0">稽核倍数</el-radio>
+                    <el-input-number v-if="form.auditMode==='mul'" v-model="form.auditMulVal" :min="0.01" :max="99" :step="0.01" :precision="2" controls-position="right" size="small" style="width:120px"/>
+                    <span v-if="form.auditMode==='mul'" style="font-size:12px;color:#909399">倍</span>
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="amt" style="margin-right:0">稽核金额</el-radio>
+                    <span v-if="form.auditMode==='amt'" style="font-size:12px;color:#909399">按档位在奖励配置表格中填写</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 手机号码 -->
+            <div class="frow">
+              <span class="flabel">手机号码</span>
+              <div class="fval">
+                <div v-if="!form.spinPhoneName" class="spin-file-row">
+                  <label class="up-btn">
+                    ⬆ 上传手机号码用于邀请
+                    <input type="file" accept=".xls,.xlsx,.csv" style="display:none" @change="onSpinPhoneUp">
+                  </label>
+                  <el-button size="small" @click.prevent="showSpinPhoneDetail=true">查看明细</el-button>
+                  <el-button size="small" @click.prevent>下载文件</el-button>
+                </div>
+                <div v-else class="spin-file-row">
+                  <span class="spin-file-chip">📄 {{ form.spinPhoneName }}</span>
+                  <label class="up-btn">
+                    重新上传
+                    <input type="file" accept=".xls,.xlsx,.csv" style="display:none" @change="onSpinPhoneUp">
+                  </label>
+                  <el-button size="small" type="danger" plain @click.prevent="form.spinPhoneName=''">删除</el-button>
+                  <el-button size="small" @click.prevent="showSpinPhoneDetail=true">查看明细</el-button>
+                </div>
+                <div class="fhint">上传后系统将向名单中的手机号发送邀请链接；格式同批量上传模版</div>
+              </div>
+            </div>
+
+            <!-- 免费次数名单 -->
+            <div class="frow">
+              <span class="flabel">
+                免费次数名单
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    上传后，指定用户可直接获得对应次数的免费抽奖，无需完成任务<br>
+                    模版格式：用户ID | 免费抽奖次数
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div v-if="!form.spinFreeListName" class="spin-file-row">
+                  <label class="up-btn">
+                    ⬆ 上传文件
+                    <input type="file" accept=".xls,.xlsx,.csv" style="display:none" @change="onSpinFreeListUp">
+                  </label>
+                  <a href="javascript:void(0)" style="font-size:13px;color:#409eff;text-decoration:none" @click.prevent>下载模版</a>
+                  <el-button size="small" @click.prevent="showSpinFreeDetail=true">查看明细</el-button>
+                </div>
+                <div v-else class="spin-file-row">
+                  <span class="spin-file-chip">📄 {{ form.spinFreeListName }}</span>
+                  <label class="up-btn">
+                    重新上传
+                    <input type="file" accept=".xls,.xlsx,.csv" style="display:none" @change="onSpinFreeListUp">
+                  </label>
+                  <el-button size="small" type="danger" plain @click.prevent="form.spinFreeListName=''">删除</el-button>
+                  <a href="javascript:void(0)" style="font-size:13px;color:#409eff;text-decoration:none" @click.prevent>下载模版</a>
+                  <el-button size="small" @click.prevent="showSpinFreeDetail=true">查看明细</el-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 抽奖次数配置 -->
+            <div class="frow">
+              <span class="flabel req">抽奖次数配置</span>
+              <div class="fval">
+                <div style="overflow-x:auto">
+                  <table class="spin-task-tbl">
+                    <thead>
+                      <tr>
+                        <th>序号</th>
+                        <th style="min-width:200px">任务名称</th>
+                        <th>条件</th>
+                        <th>抽奖次数</th>
+                        <th style="min-width:130px">排序</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(task, ti) in form.spinTasks" :key="ti">
+                        <td>{{ ti + 1 }}</td>
+                        <td>
+                          <select v-model="task.name" class="f-sel" style="width:210px"
+                            :disabled="ti === 0"
+                            @change="onSpinTaskNameChange(task)">
+                            <option v-for="o in spinTaskAvailableOpts(task)" :key="o" :value="o">{{ o }}</option>
+                          </select>
+                          <span v-if="ti === 0" style="font-size:11px;color:#909399;margin-left:6px">（必选）</span>
+                        </td>
+                        <td>
+                          <div style="display:inline-flex;align-items:center;gap:4px">
+                            <el-input v-model="task.cond" size="small" style="width:80px"
+                              @input="clampSpinTaskCond(task,$event)"/>
+                            <span style="font-size:12px;color:#606266;white-space:nowrap">{{ spinTaskUnit(task.name) }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <el-input v-model="task.spins" size="small" style="width:70px"
+                            @input="clampSpinTaskSpins(task,$event)"/>
+                        </td>
+                        <td>
+                          <span class="spin-sort-grp">
+                            <a :class="{disabled:ti <= 1}" @click.prevent="spinTaskTop(ti)">置顶</a>
+                            <a :class="{disabled:ti <= 1}" @click.prevent="spinTaskUp(ti)">上移</a>
+                            <a :class="{disabled:ti === 0 || ti === form.spinTasks.length-1}" @click.prevent="spinTaskDown(ti)">下移</a>
+                          </span>
+                        </td>
+                        <td style="text-align:center">
+                          <span v-if="form.spinTasks.length > 1 && ti !== 0"
+                            class="rb-tbl-del" @click.prevent="spinTaskRemove(ti)">×</span>
+                          <span v-else style="color:#e0e3e8;font-size:15px"
+                            :title="ti === 0 ? '邀请好友为必选任务，不可删除' : '至少保留 1 个任务'">×</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                  <button class="rb-tbl-add"
+                    v-if="form.spinTasks.length < 7"
+                    @click.prevent="spinTaskAdd(form.spinTasks.length - 1)">＋ 新增任务</button>
+                  <span style="font-size:12px;color:#909399">{{ form.spinTasks.length }} / 7 个任务</span>
+                </div>
+                <div class="fhint" style="margin-top:6px">
+                  · 第一个任务固定为「邀请好友」，不可修改、不可移动、不可删除<br>
+                  · 同一任务类型只能配置一次，已选过的任务在其他行的下拉中自动隐藏<br>
+                  · 最多配置 7 个任务
+                </div>
+              </div>
+            </div>
+
+            <!-- 奖品配置 -->
+            <div class="frow">
+              <span class="flabel req">奖品配置</span>
+              <div class="fval">
+                <div class="rwd-wrap">
+                  <table class="spin-tbl">
+                    <thead>
+                      <tr>
+                        <th>序号</th>
+                        <th>奖励名称</th>
+                        <th>奖励金额</th>
+                        <th>
+                          中奖概率
+                          <el-tooltip effect="dark" placement="top" :show-after="100">
+                            <template #content>所有奖品概率之和必须等于 100%</template>
+                            <span class="th-q">?</span>
+                          </el-tooltip>
+                        </th>
+                        <th>
+                          附加任务
+                          <el-tooltip effect="dark" placement="top" :show-after="100">
+                            <template #content>
+                              勾选后，该奖品在前端展示为「神秘大奖」；<br>
+                              用户抽中后需完成指定邀请人数任务，方可领取奖励
+                            </template>
+                            <span class="th-q">?</span>
+                          </el-tooltip>
+                        </th>
+                        <th>附加条件（邀请人数）</th>
+                        <th v-if="form.auditMode==='amt'">稽核金额</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(prize, pi) in form.spinPrizes" :key="pi">
+                        <td>{{ pi + 1 }}</td>
+                        <td>
+                          <el-input v-model="prize.name" :maxlength="15" show-word-limit
+                            placeholder="奖励名称" size="small" style="width:170px"/>
+                        </td>
+                        <td>
+                          <el-input v-model="prize.amount" placeholder="0.00" size="small"
+                            style="width:120px" @input="clampSpinAmt(prize,$event)"/>
+                        </td>
+                        <td>
+                          <el-input v-model="prize.prob" placeholder="0.00" size="small"
+                            style="width:100px" @input="clampSpinProb(prize,$event)">
+                            <template #suffix><span style="color:#909399;font-size:11px">%</span></template>
+                          </el-input>
+                        </td>
+                        <td>
+                          <label class="spin-task-chk">
+                            <input type="checkbox" v-model="prize.hasTask"
+                              style="width:14px;height:14px;accent-color:#409eff;cursor:pointer">
+                            <span>邀请好友</span>
+                          </label>
+                        </td>
+                        <td>
+                          <el-input v-if="prize.hasTask" v-model="prize.taskCond"
+                            placeholder="整数" size="small" style="width:110px"
+                            @input="clampSpinCond(prize,$event)">
+                            <template #suffix><span style="color:#909399;font-size:11px">人</span></template>
+                          </el-input>
+                          <span v-else style="font-size:12px;color:#c0c4cc">—</span>
+                        </td>
+                        <td v-if="form.auditMode==='amt'">
+                          <el-input v-model="prize.auditAmt" placeholder="稽核金额" size="small" style="width:110px"/>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 概率汇总条 -->
+                <div class="spin-prob-bar" :class="spinProbOk ? 'is-ok' : 'is-err'">
+                  <span>概率总和：<strong>{{ spinProbSum.toFixed(2) }}%</strong> / 100%</span>
+                  <span v-if="spinProbOk">✓ 已满足</span>
+                  <span v-else style="font-size:12px">
+                    {{ spinProbSum < 100 ? '还差' : '超出' }}
+                    <strong>{{ Math.abs(100 - spinProbSum).toFixed(2) }}%</strong>
+                  </span>
+                </div>
+
+                <div class="fhint" style="margin-top:8px">
+                  · 奖品固定 9 个，序号不可增删；所有概率之和须等于 100%<br>
+                  · 勾选「附加任务」后，该奖品前端显示为「神秘大奖」，用户需邀请足够人数后方可领取
+                </div>
+              </div>
+            </div>
+
+          <!-- ─── 手机号码明细 浮窗 ─── -->
+          <div class="rb-confirm-mask" v-if="showSpinPhoneDetail" @click.self="showSpinPhoneDetail=false">
+            <div style="background:#fff;border-radius:8px;width:520px;max-width:92vw;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.22);animation:dlgIn .15s ease">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e4e7ed;flex-shrink:0">
+                <span style="font-size:15px;font-weight:600;color:#1f2937">{{ form.spinPhoneName || '手机号码名单' }}</span>
+                <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#909399;line-height:1;padding:2px 6px;border-radius:4px" @click.prevent="showSpinPhoneDetail=false">×</button>
+              </div>
+              <div style="padding:10px 20px 6px;font-size:13px;color:#606266;flex-shrink:0">总记录：<strong>100</strong></div>
+              <div style="overflow-y:auto;flex:1;padding:0 0 12px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                  <thead>
+                    <tr>
+                      <th style="padding:8px 10px;text-align:center;width:50px;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">序号</th>
+                      <th style="padding:8px 10px;text-align:left;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">手机号码</th>
+                      <th style="padding:8px 10px;text-align:left;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">上传时间</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(r, ri) in SPIN_PHONE_MOCK" :key="ri">
+                      <td style="padding:7px 10px;text-align:center;color:#606266;border-bottom:1px solid #f0f2f5">{{ ri+1 }}</td>
+                      <td style="padding:7px 10px;color:#606266;border-bottom:1px solid #f0f2f5">{{ r.phone }}</td>
+                      <td style="padding:7px 10px;color:#909399;border-bottom:1px solid #f0f2f5">{{ r.time }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── 免费次数名单明细 浮窗 ─── -->
+          <div class="rb-confirm-mask" v-if="showSpinFreeDetail" @click.self="showSpinFreeDetail=false">
+            <div style="background:#fff;border-radius:8px;width:480px;max-width:92vw;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.22);animation:dlgIn .15s ease">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e4e7ed;flex-shrink:0">
+                <span style="font-size:15px;font-weight:600;color:#1f2937">{{ form.spinFreeListName || '免费次数名单' }}</span>
+                <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#909399;line-height:1;padding:2px 6px;border-radius:4px" @click.prevent="showSpinFreeDetail=false">×</button>
+              </div>
+              <div style="padding:10px 20px 6px;font-size:13px;color:#606266;flex-shrink:0">总记录：<strong>100</strong></div>
+              <div style="overflow-y:auto;flex:1;padding:0 0 12px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                  <thead>
+                    <tr>
+                      <th style="padding:8px 10px;text-align:center;width:50px;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">序号</th>
+                      <th style="padding:8px 10px;text-align:left;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">用户ID</th>
+                      <th style="padding:8px 10px;text-align:left;font-weight:500;color:#606266;background:#f5f7fa;border-bottom:1px solid #ebeef5;border-top:1px solid #ebeef5">免费抽奖次数</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(r, ri) in SPIN_FREE_MOCK" :key="ri">
+                      <td style="padding:7px 10px;text-align:center;color:#606266;border-bottom:1px solid #f0f2f5">{{ ri+1 }}</td>
+                      <td style="padding:7px 10px;color:#606266;border-bottom:1px solid #f0f2f5">{{ r.uid }}</td>
+                      <td style="padding:7px 10px;color:#606266;border-bottom:1px solid #f0f2f5">{{ r.spins }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          </template>
+
+          <!-- ─── 累积充值 奖励配置 ─── -->
+          <template v-if="!form.noChannel && activeType === 'cumulative'">
+
+            <!-- ─── 派发方式（顶部，共用配置） ─── -->
+            <div class="frow">
+              <span class="flabel req">派发方式
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    决定用户完成活动条件后，奖励以何种形式发放：<br>
+                    · 玩家自领-过期作废：手动领取，逾期作废不补发<br>
+                    · 玩家自领-过期自动派发：手动领取，逾期系统自动发放至钱包<br>
+                    · 系统自动派发：达成条件后立即自动发放，无需操作
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumDispatchMode" value="manual_void">玩家自领-过期作废</el-radio>
+                  <el-radio v-model="form.cumDispatchMode" value="manual_auto">玩家自领-过期自动派发</el-radio>
+                  <el-radio v-model="form.cumDispatchMode" value="system_auto">系统自动派发</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto'">
+              <span class="flabel req">领取时间
+                <el-tooltip effect="dark" placement="top" :show-after="100">
+                  <template #content>
+                    决定用户何时可以开始领取奖励：<br>
+                    · 次日领取：达成条件后，次日指定时间点才可领取<br>
+                    · 实时领取：达成条件后立即可领取（实时结算）
+                  </template>
+                  <span class="q">?</span>
+                </el-tooltip>
+              </span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumClaimTimeMode" value="nextDay" disabled><span style="color:#c0c4cc">次日领取</span></el-radio>
+                  <el-radio v-model="form.cumClaimTimeMode" value="realtime">实时领取</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="(form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto') && form.cumClaimTimeMode==='nextDay'">
+              <span class="flabel req">选择时间</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <el-time-picker v-model="form.cumClaimTime" format="HH:mm" value-format="HH:mm" placeholder="00:00" style="width:140px"/>
+                  <span style="font-size:13px;color:#606266">以后可领取</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="frow" v-if="form.cumDispatchMode==='manual_void' || form.cumDispatchMode==='manual_auto'">
+              <span class="flabel req" style="width:auto;min-width:136px;white-space:nowrap">
+                奖励领取过期
+              </span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:13px;color:#303133;font-weight:500">周期结束自动过期</span>
+                </div>
+                <div class="fhint">每个统计周期结束时，当期未领取的奖励自动失效</div>
+              </div>
+            </div>
+
+            <div class="frow">
+              <span class="flabel">人工审核</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio v-model="form.cumManualReview" value="yes" disabled><span style="color:#c0c4cc">需要</span></el-radio>
+                  <el-radio v-model="form.cumManualReview" value="no">不需要</el-radio>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分隔线 -->
+            <div style="height:1px;background:#ebeef5;margin:4px 0 18px"></div>
+
+            <!-- 稽核配置（累积充值，与等级配置同级） -->
+            <div class="frow" style="margin-bottom:14px">
+              <span class="flabel">稽核配置</span>
+              <div class="fval">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="mul" style="margin-right:0">稽核倍数</el-radio>
+                    <el-input-number v-if="form.auditMode==='mul'" v-model="form.auditMulVal" :min="0.01" :max="99" :step="0.01" :precision="2" controls-position="right" size="small" style="width:120px"/>
+                    <span v-if="form.auditMode==='mul'" style="font-size:12px;color:#909399">倍</span>
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <el-radio v-model="form.auditMode" value="amt" style="margin-right:0">稽核金额</el-radio>
+                    <span v-if="form.auditMode==='amt'" style="font-size:12px;color:#909399">按档位在奖励配置表格中填写</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 活动周期 -->
+            <div class="frow">
+              <span class="flabel req">活动周期</span>
+              <div class="fval">
+                <div class="inline-grp">
+                  <el-radio model-value="rolling" value="rolling">滚动周期</el-radio>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+                  <span style="font-size:13px;color:#606266">周期时长：</span>
+                  <el-input-number v-model="form.cumCycleDays" :min="1" :max="30" :step="1" controls-position="right" style="width:130px"/>
+                  <span style="font-size:13px;color:#606266">天</span>
+                </div>
+                <div class="fhint">
+                  自用户首次充值起开始计算，统计周期内的<strong>累计充值金额</strong>达到对应门槛可解锁奖励；周期结束后累计充值金额清零（计算金额重置为 0，重新开始累计），用户可重新充值开启新周期
+                </div>
+              </div>
+            </div>
+
+            <!-- 等级配置 -->
+            <div class="frow">
+              <span class="flabel req">
+                等级配置
+              </span>
+              <div class="fval" style="position:relative">
+
+                <!-- 提示信息 -->
+                <div class="cum-hint-line">
+                  <span class="cum-hint-key">奖励发放规则：</span>
+                  <span>累积充值金额达到门槛即可解锁该等级，每个等级奖励仅可领取一次</span>
+                </div>
+
+                <div class="rb-section" style="margin-bottom:0">
+                  <div class="rb-section-hd">
+                    <span class="rb-section-title">累积充值等级</span>
+                    <span class="rb-section-badge">{{ form.cumLevels.length }} 级</span>
+                    <button class="rb-reset-btn" style="margin-left:auto"
+                            @click.prevent="confirmResetCumLevels">
+                      <span style="font-size:13px">↺</span> 恢复初始配置
+                    </button>
+                  </div>
+                  <div class="rb-section-body" style="padding:0">
+                    <div class="cum-tbl-wrap">
+                      <table class="cum-tbl">
+                        <thead>
+                          <tr>
+                            <th>等级</th>
+                            <th>累积充值门槛</th>
+                            <th>奖励金额</th>
+                            <th v-if="form.auditMode==='amt'">稽核金额</th>
+                            <th>操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(lv, li) in form.cumLevels" :key="li" :class="{'is-invalid-row': cumLevelErrors[li]}">
+                            <td>
+                              <span class="cum-lv-tag">Lv.{{ li + 1 }}</span>
+                            </td>
+                            <td>
+                              <el-input v-model="lv.threshold" placeholder="累积充值满 X" size="small" @input="e => { clampField(lv,'threshold',e); validateCumThreshold(); }">
+                                <template #prefix><span style="color:#909399;font-size:12px">≥</span></template>
+                              </el-input>
+                            </td>
+                            <td>
+                              <el-input v-model="lv.reward" placeholder="奖励金额" size="small" @input="clampField(lv,'reward',$event)"/>
+                            </td>
+                            <td v-if="form.auditMode==='amt'">
+                              <el-input v-model="lv.auditAmt" :placeholder="String(lv.reward||'')" size="small" @focus="fillAuditAmtLv(lv)" @input="clampLvAudit(lv,$event)"/>
+                            </td>
+                            <td>
+                              <span v-if="form.cumLevels.length > 2" class="rb-tbl-del" @click="removeCumLevel(li)">×</span>
+                              <span v-else style="color:#e0e3e8;font-size:15px" title="至少保留 2 级">×</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div v-if="Object.keys(cumLevelErrors).length" style="padding:6px 14px;background:#fef0f0">
+                      <div v-for="(msg, idx) in cumLevelErrors" :key="idx" style="font-size:11px;color:#f56c6c;padding:1px 0">{{ msg }}</div>
+                    </div>
+                    <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid #f0f2f5">
+                      <button class="rb-tbl-add" v-if="form.cumLevels.length < 50" @click.prevent="addCumLevel">＋ 新增等级</button>
+                      <span v-else style="font-size:12px;color:#f56c6c">已达上限（50 级）</span>
+                      <span style="font-size:12px;color:#909399">{{ form.cumLevels.length }} / 50 级（最少 2 级）</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 恢复初始配置 确认弹窗（累积充值） -->
+                <div class="rb-confirm-mask" v-if="showCumResetConfirm" @click.self="showCumResetConfirm=false">
+                  <div class="rb-confirm-box">
+                    <div class="rb-confirm-hd">
+                      <span class="rb-confirm-icon">⚠️</span>
+                      <span class="rb-confirm-title">恢复初始配置</span>
+                    </div>
+                    <div class="rb-confirm-body">
+                      <p>确认将累积充值等级配置恢复为初始默认数据？</p>
+                      <p style="font-size:12px;color:#909399;margin-top:8px">
+                        此操作将清空当前所有等级配置，恢复为系统默认的 5 级配置（青铜/白银/黄金/铂金/钻石），不可撤销。
+                      </p>
+                    </div>
+                    <div class="rb-confirm-ft">
+                      <button class="rb-confirm-cancel" @click.prevent="showCumResetConfirm=false">取 消</button>
+                      <button class="rb-confirm-ok" @click.prevent="doResetCumLevels">确认恢复</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 活动亮点 -->
+            <div class="frow">
+              <span class="flabel">活动亮点</span>
+              <div class="fval">
+                <div class="fhint" style="margin-bottom:8px">配置前台活动页「活动亮点」区块内容，最多 5 条，按语言独立配置</div>
+                <!-- 语言 Tab，共用外层 activeLang -->
+                <div class="lang-tabs" style="margin-bottom:10px">
+                  <div v-for="lv in form.langs" :key="lv" class="lang-tab"
+                       :class="{active:activeLang===lv}" @click="activeLang=lv">
+                    <span>{{ langFlag(lv) }}</span><span>{{ langLabel(lv) }}</span>
+                  </div>
+                </div>
+                <div v-for="(hl, hi) in form.cumHighlights" :key="hi"
+                     style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+                  <span style="font-size:12px;color:#c0c4cc;width:16px;text-align:center;cursor:grab;margin-top:8px">☰</span>
+                  <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#d4a843;color:#000;font-size:11px;font-weight:700;flex-shrink:0;margin-top:6px">{{ hi+1 }}</span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <span style="font-size:12px;color:#909399;width:28px;flex-shrink:0">标题</span>
+                      <el-input v-model="hl.title[activeLang]" placeholder="如：7天活动周期" size="small" maxlength="30" show-word-limit style="flex:1"/>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:6px">
+                      <span style="font-size:12px;color:#909399;width:28px;flex-shrink:0;padding-top:6px">内容</span>
+                      <el-input v-model="hl.content[activeLang]" type="textarea" :rows="2"
+                        placeholder="如：自首次充值起计算，7天内累计充值即可获得奖励" size="small" maxlength="120" show-word-limit style="flex:1"/>
+                    </div>
+                  </div>
+                  <span v-if="form.cumHighlights.length > 1" class="rb-tbl-del"
+                        style="margin-top:6px" @click="form.cumHighlights.splice(hi,1)">×</span>
+                </div>
+                <button class="rb-tbl-add" v-if="form.cumHighlights.length < 5"
+                        @click.prevent="addCumHighlight()">＋ 新增亮点</button>
+              </div>
+            </div>
+
+            </div>
+
+          </template>
+
+        </div>
+      </div>
+
+      <!-- ④ 领取条件 -->
+      <div class="sec" style="opacity:.38;pointer-events:none;user-select:none;position:relative">
+        <div class="sec-hd"><span class="sec-bar"></span><span class="sec-title">领取条件</span></div>
+        <div class="sec-body">
+
+          <div class="frow">
+            <span class="flabel req">申领终端</span>
+            <div class="fval">
+              <div class="cond-grp">
+                <el-checkbox v-model="form.terminals.ios_web">iOS-WEB-APP</el-checkbox>
+                <el-checkbox v-model="form.terminals.ios_lite">iOS-LITE-APP</el-checkbox>
+                <el-checkbox v-model="form.terminals.android_web">Android-WEB-APP</el-checkbox>
+                <el-checkbox v-model="form.terminals.h5">H5</el-checkbox>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel">设备限制</span>
+            <div class="fval">
+              <div class="cond-grp">
+                <el-checkbox v-model="form.deviceLimit.sameIp">同登录IP领取1次</el-checkbox>
+                <el-checkbox v-model="form.deviceLimit.sameDevice">同设备领取1次</el-checkbox>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel">绑定资料</span>
+            <div class="fval">
+              <div class="cond-grp">
+                <el-checkbox v-model="form.bindReq.bankCard">绑定银行卡</el-checkbox>
+                <el-checkbox v-model="form.bindReq.eWallet">绑定电子钱包</el-checkbox>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel">完成验证</span>
+            <div class="fval">
+              <div class="cond-grp">
+                <el-checkbox v-model="form.verifyReq.phone">手机号</el-checkbox>
+              </div>
+            </div>
+          </div>
+
+          <div class="frow" style="margin-bottom:0">
+            <span class="flabel">指定达成</span>
+            <div class="fval">
+              <div class="cond-grp">
+                <el-checkbox v-model="form.achieveReq.checkDeposit">检查存款</el-checkbox>
+                <el-checkbox v-model="form.achieveReq.checkBet">检查打码</el-checkbox>
+                <el-checkbox v-model="form.achieveReq.checkLoss">检查游戏亏损</el-checkbox>
+                <el-checkbox v-model="form.achieveReq.inviteFriend">邀请好友注册</el-checkbox>
+                <el-checkbox v-model="form.achieveReq.continuousLogin">连续登录</el-checkbox>
+              </div>
+
+              <!-- 子配置区 -->
+              <div class="achieve-sub">
+
+                <!-- 检查存款 -->
+                <div class="achieve-block" v-if="form.achieveReq.checkDeposit">
+                  <div class="achieve-row" style="margin-bottom:10px">
+                    <span class="achieve-label">检查存款：存款金额：</span>
+                    <select v-model="form.achieve.depositAmtMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.depositAmt" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                  <div class="achieve-row">
+                    <span class="achieve-label" style="padding-left:52px">存款次数：</span>
+                    <select v-model="form.achieve.depositCntMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.depositCnt" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                </div>
+
+                <!-- 检查打码 -->
+                <div class="achieve-block" v-if="form.achieveReq.checkBet">
+                  <div class="achieve-row" style="align-items:flex-start">
+                    <span class="achieve-label" style="line-height:32px">检查打码：<span class="achieve-req">*</span>类型&amp;场馆：</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="border:1px solid #dcdfe6;border-radius:4px;min-height:32px;padding:4px 8px;background:#fff;display:flex;align-items:center;flex-wrap:wrap;gap:4px;cursor:pointer" @click="betPanelOpen=!betPanelOpen">
+                        <template v-if="betSelectedTags.length">
+                          <span v-for="tag in betSelectedTags" :key="tag.key" class="c-tag">
+                            {{ tag.label }}
+                            <span class="c-tag-x" @click.stop="removeBetTag(tag)">×</span>
+                          </span>
+                        </template>
+                        <span v-else style="color:#c0c4cc;font-size:13px">请选择</span>
+                        <span style="margin-left:auto;color:#c0c4cc;font-size:12px">{{ betPanelOpen ? '▲' : '▼' }}</span>
+                      </div>
+                      <div v-if="betPanelOpen" class="cascade-wrap">
+                        <div class="cascade-left">
+                          <div v-for="cat in betCategories" :key="cat.key" class="cascade-item" :class="{active:betActiveCategory===cat.key}" @click="betActiveCategory=cat.key">
+                            <el-checkbox :model-value="isCatChecked(cat.key)" :indeterminate="isCatPartial(cat.key)" @change="toggleCat(cat.key,$event)" @click.stop>{{ cat.label }}</el-checkbox>
+                            <span class="ci-arrow">›</span>
+                          </div>
+                        </div>
+                        <div class="cascade-right">
+                          <div v-for="venue in activeBetVenues" :key="venue.key" class="cascade-item">
+                            <el-checkbox v-model="form.achieve.betVenueMap[venue.key]" @change="onVenueChange(venue.key,venue.cat)">{{ venue.label }}</el-checkbox>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="achieve-row" style="margin-top:10px">
+                    <span class="achieve-label" style="padding-left:52px">打码：</span>
+                    <select v-model="form.achieve.betAmtMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.betAmt" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                </div>
+
+                <!-- 检查游戏亏损 -->
+                <div class="achieve-block" v-if="form.achieveReq.checkLoss">
+                  <div class="achieve-row">
+                    <span class="achieve-label">检查游戏亏损：游戏亏损：</span>
+                    <select v-model="form.achieve.lossMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.lossAmt" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                </div>
+
+                <!-- 邀请好友注册 -->
+                <div class="achieve-block" v-if="form.achieveReq.inviteFriend">
+                  <div class="achieve-row">
+                    <span class="achieve-label">邀请好友注册：合格人数：</span>
+                    <select v-model="form.achieve.inviteCntMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.inviteCnt" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                  <div class="invite-sub">
+                    <div class="invite-sub-title">合格下级定义</div>
+                    <div class="invite-sub-row">
+                      <span class="invite-sub-label">充值金额 &gt;=</span>
+                      <el-input v-model="form.achieve.inviteDepositMin" placeholder="请输入" style="flex:1;max-width:400px"/>
+                    </div>
+                    <div class="invite-sub-row">
+                      <span class="invite-sub-label">打码金额 &gt;=</span>
+                      <el-input v-model="form.achieve.inviteBetMin" placeholder="请输入" style="flex:1;max-width:400px"/>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 连续登录 -->
+                <div class="achieve-block" v-if="form.achieveReq.continuousLogin">
+                  <div class="achieve-row">
+                    <span class="achieve-label">检查登录：连续登录：</span>
+                    <select v-model="form.achieve.loginMode" class="f-sel achieve-f-sel"><option value="history">历史加总</option><option value="since">活动开始后累计</option></select>
+                    <span class="achieve-gte">&gt;=</span>
+                    <el-input v-model="form.achieve.loginDays" placeholder="请输入" class="achieve-input"/>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ⑤ 详情配置 -->
+      <div class="sec" style="margin-bottom:16px">
+        <div class="sec-hd"><span class="sec-bar"></span><span class="sec-title">详情配置</span></div>
+        <div class="sec-body">
+
+          <div class="lang-tabs" style="margin-bottom:14px">
+            <div v-for="lv in form.langs" :key="lv" class="lang-tab" :class="{active:activeLang===lv}" @click="activeLang=lv">
+              <span>{{ langFlag(lv) }}</span><span>{{ langLabel(lv) }}</span>
+            </div>
+          </div>
+
+          <div class="frow">
+            <span class="flabel">宣传图</span>
+            <div class="fval">
+              <label class="img-up">⬆ 点击上传<input type="file" accept="image/jpg,image/png" style="display:none" @change="onBannerUp"></label>
+              <div class="img-up-hint">只能上传jpg/png文件，且不超过3MB，建议尺寸为1035*744</div>
+              <div v-if="form.bannerPreview" style="margin-top:8px">
+                <img :src="form.bannerPreview" style="max-width:180px;max-height:90px;border-radius:4px;border:1px solid #e4e7ed">
+              </div>
+            </div>
+          </div>
+
+
+          <div class="frow">
+            <span class="flabel">活动详情</span>
+            <div class="fval">
+              <div class="rich-bar">
+                <select class="rich-sel"><option>Sans Serif</option><option>Serif</option><option>Mono</option></select>
+                <span style="margin:0 2px"></span>
+                <select class="rich-sel"><option>Heading 1</option><option>Heading 2</option><option>Normal</option></select>
+                <span style="margin:0 2px"></span>
+                <select class="rich-sel"><option>Normal</option><option>Small</option><option>Large</option></select>
+                <span class="rich-sep"></span>
+                <button class="rich-btn" @click.prevent><b>B</b></button>
+                <button class="rich-btn" @click.prevent><i>I</i></button>
+                <button class="rich-btn" @click.prevent><u>U</u></button>
+                <button class="rich-btn" @click.prevent><s>S</s></button>
+                <button class="rich-btn" @click.prevent>x²</button>
+                <button class="rich-btn" @click.prevent>x₂</button>
+                <span class="rich-sep"></span>
+                <button class="rich-btn" @click.prevent>A</button>
+                <button class="rich-btn" @click.prevent>◐</button>
+                <button class="rich-btn" @click.prevent>❝</button>
+                <button class="rich-btn" @click.prevent>&lt;/&gt;</button>
+                <span class="rich-sep"></span>
+                <button class="rich-btn" @click.prevent>≡</button>
+                <button class="rich-btn" @click.prevent>☰</button>
+                <button class="rich-btn" @click.prevent>◧</button>
+                <button class="rich-btn" @click.prevent>⊟</button>
+                <button class="rich-btn" @click.prevent>◨</button>
+                <button class="rich-btn" @click.prevent>¶</button>
+                <span class="rich-sep"></span>
+                <button class="rich-btn" @click.prevent>🔗</button>
+                <button class="rich-btn" @click.prevent>🖼</button>
+                <button class="rich-btn" @click.prevent>▶</button>
+                <button class="rich-btn" @click.prevent>⊞</button>
+              </div>
+              <textarea class="rich-area" v-model="form.detail[activeLang]" placeholder="请输入活动详情内容..."></textarea>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+        </div>
+      </div>
+
+    </div><!-- /dlg-body -->
+
+    <!-- 底部 -->
+    <div class="dlg-ft">
+      <el-button @click="closeDlg">取消</el-button>
+      <el-button @click="onSave(true)">存为草稿</el-button>
+      <el-button type="primary" @click="onSave(false)">提交</el-button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- 批量上传 二级弹窗 -->
+<div class="up-dlg-mask" id="up-dlg-mask">
+  <div class="up-dlg" id="up-dlg-box">
+    <div class="up-dlg-hd">
+      <span class="up-dlg-title">批量上传</span>
+      <button class="up-dlg-close" onclick="hideUpDlg()">×</button>
+    </div>
+    <div class="up-dlg-body">
+      <!-- 文件选择 -->
+      <div class="up-dlg-row">
+        <span class="up-dlg-label">批量上传：</span>
+        <label class="up-btn-data" id="up-btn-data-label">
+          ⬆ 数据上传
+          <input type="file" id="up-file-input" accept=".xls,.xlsx,.csv" style="display:none" onchange="onUpFileChange(event)">
+        </label>
+        <span id="up-fname" style="font-size:12px;color:#606266;margin-left:4px"></span>
+      </div>
+
+      <!-- 解析进度 -->
+      <div id="up-progress" style="display:none;margin-bottom:14px">
+        <div style="font-size:12px;color:#606266;margin-bottom:6px">正在解析文件…</div>
+        <div style="height:4px;background:#ebeef5;border-radius:2px;overflow:hidden">
+          <div id="up-progress-bar" style="height:100%;width:30%;background:#409eff;transition:width .25s"></div>
+        </div>
+      </div>
+
+      <!-- 解析结果汇总 -->
+      <div id="up-result-summary" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:6px;font-size:12px"></div>
+
+      <!-- 错误列表 -->
+      <div id="up-error-list" style="display:none;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500;color:#303133">错误清单</span>
+          <a id="up-download-err" href="javascript:void(0)" style="font-size:12px;color:#409eff;text-decoration:none" onclick="downloadErrors()">↓ 下载错误清单 CSV</a>
+        </div>
+        <div id="up-error-body" style="max-height:180px;overflow-y:auto;border:1px solid #ebeef5;border-radius:4px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#fef0f0;color:#f56c6c">
+              <th style="padding:6px 10px;text-align:left;width:60px">行号</th>
+              <th style="padding:6px 10px;text-align:left;width:90px">字段</th>
+              <th style="padding:6px 10px;text-align:left">原因</th>
+            </tr></thead>
+            <tbody id="up-error-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 预览列表（成功时） -->
+      <div id="up-preview" style="display:none;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:500;color:#303133;margin-bottom:6px">数据预览（前 50 行）</div>
+        <div style="max-height:160px;overflow-y:auto;border:1px solid #ebeef5;border-radius:4px;padding:8px 10px;font-size:12px;color:#606266" id="up-preview-body"></div>
+      </div>
+
+      <!-- 使用说明 -->
+      <div class="up-guide" id="up-guide-block">
+        <div class="up-guide-title">使用说明</div>
+        <div class="up-guide-item">仅支持 <strong>.xls / .xlsx / .csv</strong> 格式</div>
+        <div class="up-guide-item">单次上传上限 <strong>1000 条</strong>，文件大小 <strong>≤ 50 MB</strong>，超过请分批次上传</div>
+        <div class="up-guide-item">第一行必须为模版表头，UID 仅数字、手机号符合区号+号码长度，且文件内不可重复</div>
+        <div class="up-guide-item">所有数据 100% 校验通过方可上传，任意一条错误则全部拦截</div>
+        <a class="up-guide-link" onclick="downloadTpl()" href="javascript:void(0)">下载模版</a>
+      </div>
+    </div>
+    <div class="up-dlg-ft">
+      <el-button onclick="hideUpDlg()" id="up-cancel-btn">取消</el-button>
+      <el-button type="primary" onclick="confirmUpload()" id="up-confirm-btn">确定</el-button>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.27/vue.global.prod.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.7.2/index.full.min.js"></script>
+<script>
+const { createApp, ref, reactive } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+/* ── embed 模式：隐藏列表页、去掉背景色和蒙版、禁用动画 ── */
+const IS_EMBED = new URLSearchParams(location.search).has('embed');
+if (IS_EMBED) {
+  document.addEventListener('DOMContentLoaded', () => {
+    // 隐藏列表页
+    const lp = document.getElementById('list-page');
+    if (lp) lp.style.display = 'none';
+    // 透明背景（去掉灰色蒙版）
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+    // 去掉 overlay 自带的半透明黑色遮罩（父页面已有遮罩）
+    const ov = document.getElementById('overlay');
+    if (ov) ov.style.background = 'transparent';
+    showDlg();
+  });
+}
+
+/* ── 弹窗开关（纯 DOM，无需 Vue） ── */
+const overlay = document.getElementById('overlay');
+function showDlg() { overlay.classList.add('show'); document.body.style.overflow = 'hidden'; }
+function hideDlg() {
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+  if (IS_EMBED) window.parent.postMessage('closeNewActivityDlg', '*');
+}
+
+/* ── 数据 ── */
+const mkRewards = (n) => Array.from({length:n}, () => ({
+  depositReq:null, betReq:null, makeupDeposit:null, makeupBet:null,
+  amountMin:null, amountMax:null, voucherType:'', voucherName:''
+}));
+
+const LANG_MAP = {
+  en:  { l:'English', f:'🇺🇸' },
+  hi:  { l:'हिन्दी', f:'🇮🇳' },
+};
+
+/* ── 列表页 App ── */
+createApp({
+  setup() {
+    const rows = [
+      {id:10024, name:'每日签到送好礼',   type:'签到活动', start:'2026-05-01', end:'2026-05-31', on:true},
+      {id:10023, name:'五月累积充值活动', type:'累积充值', start:'2026-05-01', end:'2026-05-31', on:true},
+      {id:10022, name:'劳动节红包雨',     type:'红包雨',   start:'2026-04-29', end:'2026-05-05', on:false},
+      {id:10021, name:'首充签到双倍奖',   type:'签到活动', start:'2026-04-01', end:'2026-04-30', on:false},
+    ];
+    const openDlg = () => showDlg();
+    return { rows, openDlg };
+  }
+}).use(ElementPlus)
+  .use({ install(a) { if(typeof ElementPlusIconsVue!=="undefined"){for (const [k,c] of Object.entries(ElementPlusIconsVue)) a.component(k,c)}; } })
+  .mount('#list-page');
+
+/* ── 弹窗 App ── */
+createApp({
+  setup() {
+    const activeType = ref('cumulative');
+    const activeLang = ref('en');
+    const typeOpts = [
+      {v:'gift',         l:'充值大礼包'},
+      {v:'signin',       l:'签到活动'},
+      {v:'cumulative',   l:'累积充值'},
+      {v:'redpacket',    l:'红包雨'},
+      {v:'vipday',       l:'会员日'},
+      {v:'luckyspinner', l:'分享转盘'},
+    ];
+    const catOpts  = ['热门','新手','VIP','投注','长期','存款'];
+    const currOpts = ['INR'];
+    const langOpts = Object.entries(LANG_MAP).map(([v,d]) => ({v, l:d.l}));
+    const langLabel = (v) => LANG_MAP[v]?.l || v;
+    const langFlag  = (v) => LANG_MAP[v]?.f || '';
+
+    const form = reactive({
+      category:[], currency:'INR',
+      langs:['en','hi'],
+      langContent:{ en:{name:''}, hi:{name:''} },
+      displayTimeRange:[], displayPermanent:false,
+      activeTimeRange:[], activePermanent:false,
+      memberScope:'all',
+      memberChannel:'',
+      agentType:'direct', memberAgent:'',
+      idInputMode:'fill', memberIds:'',
+      phoneInputMode:'fill', memberPhones:'',
+      levelSelectAll:false, levelChecked:{},
+      phoneUploadedFile:'', idUploadedFile:'',
+      levelOptions:['默认层级','默认层级','ben测试层','五百玩家','Heart0层级','1000000001','truee001测试层级','百元玩家','千元玩家','首充玩家','五千玩家','万元玩家','5万玩家','10万玩家','50万玩家','100万玩家','自动化测试层级','新增层级'],
+      noChannel: false,
+      limitMin: 100,
+      limitMax: 200000,
+      globalAmtType: 'fixed',
+      giftCycleType: 'none', // none=不循环 daily=日循环 weekly=周循环 monthly=月循环 custom=自定义
+      _showPriorityExample: false,
+      giftCycleDays: 2,      // 自定义循环天数（最小2天）
+      giftClaimExpireDays: 1, // 奖励领取过期天数
+      auditMode: 'mul',  // mul=稽核倍数 amt=稽核金额
+      auditMulVal: 1,    // 稽核倍数值
+      auditDepositType: 'multiple', auditDepositVal: null,
+      auditBonusType:   'multiple', auditBonusVal:   null,
+      depositTimes: 5,
+      quickCount: 8,
+      rewardTiers: [
+        { times:1, rows:[{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}] },
+        { times:2, rows:[{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}] },
+        { times:3, rows:[{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}] },
+        { times:4, rows:[{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}] },
+        { times:5, rows:[{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}] },
+      ],
+      perDepositEnabled: false,
+      perDepositRows: [{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}],
+      dailyFirstEnabled: false,
+      dailyFirstRows: [{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}],
+      bonusDest: 'center',
+
+      // ── 累积充值（cumulative）专属字段 ──
+      cumCycleType: 'rolling',      // 固定为滚动周期
+      cumCycleDays: 7,              // 周期天数
+      cumHighlights: [
+        { title:{en:'7-Day Activity Cycle',fil:'7-Day Activity Cycle',vi:'Chu kỳ 7 ngày',zh:'7天活动周期'}, content:{en:'Starting from your first deposit, reach the target within 7 days to earn rewards.',fil:'Mula sa unang deposito, maabot ang target sa loob ng 7 araw.',vi:'Từ lần nạp đầu tiên, đạt mục tiêu trong 7 ngày để nhận thưởng.',zh:'自首次充值起计算，7天内累计充值即可获得奖励'} },
+        { title:{en:'5-Level Rewards',fil:'5-Level Rewards',vi:'5 cấp độ phần thưởng',zh:'5级奖励递进'}, content:{en:'From LV.1 to LV.5, the more you deposit, the higher your reward.',fil:'Mula LV.1 hanggang LV.5, mas malaki ang deposito mas malaki ang gantimpala.',vi:'Từ LV.1 đến LV.5, nạp càng nhiều thưởng càng cao.',zh:'从LV.1到LV.5，充值越多奖励越高'} },
+        { title:{en:'Instant Settlement',fil:'Instant Settlement',vi:'Thanh toán tức thì',zh:'实时到账'}, content:{en:'Rewards are credited to your account immediately after claiming.',fil:'Ang mga gantimpala ay agad na ilipat pagkatapos ng pag-claim.',vi:'Phần thưởng được ghi có ngay sau khi nhận.',zh:'奖励领取后立即发放至账户，无需等待'} },
+      ],
+      cumClaimMode: 'manual',       // 兼容字段（已弃用，由 cumDispatchMode 替代）
+      cumDispatchMode: 'manual_void',   // manual_void 玩家自领-过期作废 / manual_auto 玩家自领-过期自动派发 / system_auto 系统自动派发
+      cumClaimTimeMode: 'realtime',     // nextDay 次日领取 / realtime 实时领取
+      cumClaimTime: '00:00',            // 次日领取时的可领取时间点
+      cumClaimExpireDays: 1,            // 奖励领取过期天数
+      cumManualReview: 'no',            // yes 需要人工审核 / no 不需要
+      cumLevels: [
+        { name:'青铜会员', threshold:100,   reward:20 },
+        { name:'白银会员', threshold:500,   reward:100 },
+        { name:'黄金会员', threshold:2000,  reward:500 },
+        { name:'铂金会员', threshold:10000, reward:2000 },
+        { name:'钻石会员', threshold:50000, reward:10000 },
+      ],
+      cumExpire: { clearAmount:true, expireReward:true, allowRestart:true },
+      cumDisplay: { marquee:true, leaderboard:true, countdown:true },
+
+      depositChannel:'all', betVenue:'all', auditVenue:'all',
+      terminals:{ios_web:true,ios_lite:true,android_web:true,h5:true},
+      deviceLimit:{sameIp:false,sameDevice:false},
+      bindReq:{bankCard:false,eWallet:false},
+      verifyReq:{phone:false},
+      achieveReq:{checkDeposit:false,checkBet:false,checkLoss:false,inviteFriend:false,continuousLogin:false},
+      achieve:{
+        depositAmtMode:'history', depositAmt:'',
+        depositCntMode:'history', depositCnt:'',
+        betAmtMode:'history', betAmt:'', betVenueMap:{},
+        lossMode:'history', lossAmt:'',
+        inviteCntMode:'history', inviteCnt:'', inviteDepositMin:'', inviteBetMin:'',
+        loginMode:'history', loginDays:'',
+      },
+      bannerPreview:'',
+      detail:{en:'',hi:''},
+      subtitle:{en:'',hi:''},
+
+      // ── 会员日（vipday）专属字段 ──
+      vipDispatchMode: 'manual_void',
+      vipClaimTimeMode: 'realtime',
+      vipClaimTime: '00:00',
+      vipManualReview: 'no',
+      vipAuditMode: 'mul',
+      vipAuditMulVal: 1,
+      vipCycleDay: 1,        // 每月 x 日
+      vipCondRecharge: true, // 活动条件：充值回馈
+      vipCondBet: false,     // 活动条件：投注回馈
+      vipRows: [
+        {levelNum:'10',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'11',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'12',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'13',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'14',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'15',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'16',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'17',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'18',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'19',rechargeRate:'0.1',betRate:'0.1',auditAmt:''},
+        {levelNum:'20',rechargeRate:'',  betRate:'',  auditAmt:''},
+      ],
+
+      // ── 分享转盘（luckyspinner）专属字段 ──
+      spinPhoneName: '',
+      spinFreeListName: '',
+      spinTasks: [
+        {name:'邀请好友',                 cond:'1',   spins:1},
+        {name:'下级每日累计充值',         cond:'100', spins:1},
+        {name:'当日每累计充值',           cond:'100', spins:1},
+        {name:'当日每累计投注',           cond:'100', spins:1},
+        {name:'累计提现',                 cond:'1',   spins:2},
+        {name:'连续登录',                 cond:'3',   spins:1},
+        {name:'每日成功领取任意活动礼金', cond:'1',   spins:1},
+      ],
+      spinPrizes: [
+        {name:'奖品1', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品2', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品3', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品4', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品5', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品6', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品7', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'奖品8', amount:'', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+        {name:'感谢参与', amount:'0', prob:'', hasTask:false, taskCond:'', auditAmt:''},
+      ],
+    });
+
+    // ── 分享转盘：明细浮窗 refs + mock 数据 ──
+    const showSpinPhoneDetail = Vue.ref(false);
+    const showSpinFreeDetail  = Vue.ref(false);
+    const SPIN_PHONE_MOCK = Array.from({length:15}, (_, i) => ({
+      phone: i === 0 ? '7657675474' : '7547647477',
+      time:  '2025-09-01 23:23:23',
+    }));
+    const SPIN_FREE_MOCK = Array.from({length:15}, (_, i) => ({
+      uid:   i === 0 ? '7657675474' : '7547647477',
+      spins: 10,
+    }));
+
+    // ── 分享转盘：抽奖次数配置 ──
+    const SPIN_TASK_OPTS = [
+      '邀请好友','下级每日累计充值','当日每累计充值',
+      '当日每累计投注','累计提现','连续登录','每日成功领取任意活动礼金'
+    ];
+    const _SPIN_UNIT = {
+      '邀请好友':'人','下级每日累计充值':'INR','当日每累计充值':'INR',
+      '当日每累计投注':'INR','累计提现':'次','连续登录':'天','每日成功领取任意活动礼金':'次'
+    };
+    const spinTaskUnit = (name) => _SPIN_UNIT[name] || '次';
+
+    // 每行下拉可选项 = 当前行已选的 ∪ (全部任务 - 其他行已用的任务)
+    // ① 保留当前行能看到自己选的值  ② 已被其他行选过的任务隐藏，避免重复
+    const spinTaskAvailableOpts = (currentTask) => {
+      const usedByOthers = new Set(
+        form.spinTasks.filter(t => t !== currentTask).map(t => t.name)
+      );
+      return SPIN_TASK_OPTS.filter(opt => !usedByOthers.has(opt));
+    };
+
+    const onSpinTaskNameChange = () => {};
+
+    // 排序：「邀请好友」永远锁在 index 0
+    const spinTaskTop  = (i) => {
+      if (i <= 1) return;
+      const t = form.spinTasks.splice(i, 1)[0];
+      form.spinTasks.splice(1, 0, t);   // 插到 index 1（紧跟邀请好友）
+    };
+    const spinTaskUp = (i) => {
+      if (i <= 1) return;
+      const t = form.spinTasks.splice(i, 1)[0];
+      form.spinTasks.splice(i - 1, 0, t);
+    };
+    const spinTaskDown = (i) => {
+      if (i === 0 || i >= form.spinTasks.length - 1) return;
+      const t = form.spinTasks.splice(i, 1)[0];
+      form.spinTasks.splice(i + 1, 0, t);
+    };
+
+    // 新增任务：默认给新行选一个未被使用的任务类型，避免重复
+    const spinTaskAdd = (i) => {
+      if (form.spinTasks.length >= 7) return ElMessage.warning('最多配置 7 个抽奖任务');
+      const used = new Set(form.spinTasks.map(t => t.name));
+      const firstUnused = SPIN_TASK_OPTS.find(o => !used.has(o));
+      if (!firstUnused) return ElMessage.warning('所有任务类型已全部配置，无可新增');
+      form.spinTasks.splice(i + 1, 0, { name: firstUnused, cond: '1', spins: 1 });
+    };
+
+    // 删除：「邀请好友」（index 0）禁止删除
+    const spinTaskRemove = (i) => {
+      if (i === 0) return ElMessage.warning('「邀请好友」为必选任务，不可删除');
+      if (form.spinTasks.length <= 1) return ElMessage.warning('至少保留 1 个抽奖任务');
+      form.spinTasks.splice(i, 1);
+    };
+    const clampSpinTaskCond  = (task, e) => {
+      let v=(e&&e.target?e.target.value:String(task.cond??''));
+      v=v.replace(/[^\d.]/g,'');
+      const p=v.split('.');
+      if(p.length>2)v=p[0]+'.'+p.slice(1).join('');
+      if(p[1]!==undefined)v=p[0]+'.'+p[1].slice(0,2);
+      task.cond=v;
+    };
+    const clampSpinTaskSpins = (task, e) => {
+      let v=(e&&e.target?e.target.value:String(task.spins??''));
+      task.spins=v.replace(/[^\d]/g,'')||'';
+    };
+    const onSpinPhoneUp    = (e) => { const f=e.target.files[0]; if(f) form.spinPhoneName=f.name; };
+    const onSpinFreeListUp = (e) => { const f=e.target.files[0]; if(f) form.spinFreeListName=f.name; };
+
+    // ── 分享转盘：概率计算 & 输入过滤 ──
+    const spinProbSum = Vue.computed(() =>
+      form.spinPrizes.reduce((s, p) => {
+        const v = parseFloat(p.prob);
+        return s + (isNaN(v) ? 0 : v);
+      }, 0)
+    );
+    const spinProbOk = Vue.computed(() => Math.abs(spinProbSum.value - 100) < 0.001);
+
+    const clampSpinProb = (prize, e) => {
+      let v = (e && e.target ? e.target.value : String(prize.prob ?? ''));
+      v = v.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      if (parts[1] !== undefined) v = parts[0] + '.' + parts[1].slice(0, 2);
+      if (parseFloat(v) > 100) v = '100';
+      prize.prob = v;
+    };
+    const clampSpinAmt = (prize, e) => {
+      let v = (e && e.target ? e.target.value : String(prize.amount ?? ''));
+      v = v.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      if (parts[1] !== undefined) v = parts[0] + '.' + parts[1].slice(0, 2);
+      prize.amount = v;
+    };
+    const clampSpinCond = (prize, e) => {
+      let v = (e && e.target ? e.target.value : String(prize.taskCond ?? ''));
+      prize.taskCond = v.replace(/[^\d]/g, '');
+    };
+
+    const onLangChange = (vals) => {
+      // 至少保留 1 个语言：拦截清空操作
+      if (!vals || !vals.length) {
+        ElMessage.warning('至少保留 1 个语言');
+        // 强制还原为先前值
+        Vue.nextTick(() => {
+          if (!form.langs.length) form.langs = ['en'];
+          if (!form.langContent[form.langs[0]]) form.langContent[form.langs[0]] = {name:''};
+          activeLang.value = form.langs[0];
+        });
+        return;
+      }
+      vals.forEach(v => { if (!form.langContent[v]) form.langContent[v] = {name:''}; });
+      if (!vals.includes(activeLang.value) && vals.length) activeLang.value = vals[0];
+    };
+    const onCycleChange = (v) => { form.rewards = mkRewards({7:7,15:15,30:30,custom:7}[v]||7); };
+    const onIconUp = (i,e) => { const f=e.target.files[0]; if(f) ElMessage.success('第'+(i+1)+'天图标已选：'+f.name); };
+    // 监听批量上传完成事件
+    document.addEventListener('upload-done', (e) => {
+      const { type, fname } = e.detail;
+      if (type === 'phone') form.phoneUploadedFile = fname;
+      if (type === 'id')    form.idUploadedFile    = fname;
+    });
+
+    const onBannerUp = (e) => {
+      const f=e.target.files[0]; if(!f) return;
+      if(f.size>3*1024*1024) return ElMessage.error('文件不超过 3MB');
+      const r=new FileReader(); r.onload=ev=>{form.bannerPreview=ev.target.result;}; r.readAsDataURL(f);
+    };
+    // 批量上传弹窗（通过全局函数操作 DOM）
+    const openUpDlg = (type) => {
+      window._upType = type;
+      if (typeof _resetUpDlg === 'function') _resetUpDlg();
+      document.getElementById('up-dlg-mask').classList.add('show');
+    };
+
+    // ── 检查打码：两级联动 ──
+    const betCategories = [
+      { key:'slot',   label:'电子' },
+      { key:'fish',   label:'捕鱼' },
+      { key:'live',   label:'真人' },
+      { key:'sport',  label:'体育' },
+      { key:'chess',  label:'棋牌' },
+      { key:'lottery',label:'彩票' },
+    ];
+    const betVenueList = [
+      { key:'KINGMIDAS', label:'KINGMIDAS', cat:'slot' },
+      { key:'CQ',   label:'CQ',   cat:'slot' },
+      { key:'FC',   label:'FC',   cat:'slot' },
+      { key:'JDB',  label:'JDB',  cat:'slot' },
+      { key:'PP',   label:'PP',   cat:'slot' },
+      { key:'GGSLOT',label:'GGSLOT',cat:'slot'},
+      { key:'JILI', label:'JILI', cat:'slot' },
+      { key:'FISH_KY',label:'开元',cat:'fish' },
+      { key:'FISH_BY',label:'捕鱼王',cat:'fish'},
+      { key:'EVO',  label:'EVO',  cat:'live' },
+      { key:'WM',   label:'WM',   cat:'live' },
+      { key:'BBIN', label:'BBIN', cat:'live' },
+      { key:'SABA', label:'SABA', cat:'sport'},
+      { key:'IM',   label:'IM',   cat:'sport'},
+      { key:'KY',   label:'开元棋牌',cat:'chess'},
+      { key:'LC',   label:'乐城',  cat:'lottery'},
+    ];
+    const betPanelOpen    = ref(false);
+    const betActiveCategory = ref('slot');
+
+    const activeBetVenues = Vue.computed(() =>
+      betVenueList.filter(v => v.cat === betActiveCategory.value)
+    );
+
+    const betSelectedTags = Vue.computed(() => {
+      const tags = [];
+      betCategories.forEach(cat => {
+        const venues = betVenueList.filter(v => v.cat === cat.key);
+        const selected = venues.filter(v => form.achieve.betVenueMap[v.key]);
+        if (!selected.length) return;
+        const allSelected = selected.length === venues.length;
+        if (allSelected) {
+          // 整个类型全选 → "电子 ×" 一个 tag，key=cat:电子
+          tags.push({ key: 'cat:' + cat.key, label: cat.label, type: 'cat', cat: cat.key });
+        } else {
+          // 部分选 → 每个场馆一个 tag，显示 "捕鱼 > FC ×"
+          selected.forEach(v => {
+            tags.push({ key: v.key, label: cat.label + ' > ' + v.label, type: 'venue', venueKey: v.key });
+          });
+        }
+      });
+      return tags;
+    });
+
+    const isCatChecked = (cat) =>
+      betVenueList.filter(v=>v.cat===cat).every(v=>form.achieve.betVenueMap[v.key]);
+
+    const isCatPartial = (cat) => {
+      const venues = betVenueList.filter(v=>v.cat===cat);
+      const cnt = venues.filter(v=>form.achieve.betVenueMap[v.key]).length;
+      return cnt > 0 && cnt < venues.length;
+    };
+
+    const toggleCat = (cat, checked) => {
+      betVenueList.filter(v=>v.cat===cat).forEach(v=>{
+        form.achieve.betVenueMap[v.key] = checked;
+      });
+    };
+
+    const onVenueChange = () => {};
+
+    const removeBetTag = (tag) => {
+      if (tag.type === 'cat') {
+        // 取消整个类型
+        betVenueList.filter(v=>v.cat===tag.cat).forEach(v=>{
+          form.achieve.betVenueMap[v.key] = false;
+        });
+      } else {
+        form.achieve.betVenueMap[tag.venueKey] = false;
+      }
+    };
+
+    // ── 充值大礼包奖励配置 helpers ──
+    const tierLabel = (n) => {
+      const map = {1:'首充',2:'2存',3:'3存',4:'4存',5:'5存',6:'6存',7:'7存',8:'8存',9:'9存',10:'10存'};
+      return map[n] || (n + '存');
+    };
+
+    // 充值次数变化时，同步 rewardTiers 数量（最小1，最大10）
+    const onDepositTimesBlur = (e) => { onDepositTimesChange(e.target?.value ?? form.depositTimes); };
+    const onQuickCountBlur   = (e) => { onQuickCountChange(e.target?.value ?? form.quickCount); };
+
+    const onDepositTimesChange = (val) => {
+      const n = Math.max(1, Math.min(10, parseInt(val) || 1));
+      form.depositTimes = n;
+      const cur = form.rewardTiers.length;
+      if (n > cur) {
+        for (let i = cur; i < n; i++) {
+          const rows = Array.from({length: form.quickCount || 8}, () => ({depositAmt:null,actualAmt:null,pctAmt:null}));
+          form.rewardTiers.push({ times: i+1, rows });
+        }
+      } else if (n < cur) {
+        form.rewardTiers.splice(n);
+      }
+    };
+
+    // 快捷金额个数变化时，同步每个 tier 的 rows 数量（最小8，最大20）
+    const onQuickCountChange = (val) => {
+      const n = Math.max(8, Math.min(20, parseInt(val) || 8));
+      form.quickCount = n;
+      form.rewardTiers.forEach(tier => {
+        const cur = tier.rows.length;
+        if (n > cur) {
+          for (let i = cur; i < n; i++) tier.rows.push({depositAmt:null,actualAmt:null,pctAmt:null});
+        } else if (n < cur) {
+          tier.rows.splice(n);
+        }
+      });
+    };
+
+    // 保留旧函数名兼容模板中可能的引用
+    const addQuick = () => {};
+    const removeQuick = () => {};
+    const addTier = () => {
+      if (form.rewardTiers.length >= 20) return ElMessage.warning('已达上限，最多配置 20 次');
+      const nextTimes = (form.rewardTiers[form.rewardTiers.length-1]?.times || 0) + 1;
+      const rows = Array.from({length:8}, () => ({depositAmt:null,actualAmt:null,pctAmt:null}));
+      form.rewardTiers.push({ times: nextTimes, rows });
+    };
+    const removeTier = (i) => {
+      if (form.rewardTiers.length <= 1) return ElMessage.warning('至少保留 1 个充值次数');
+      form.rewardTiers.splice(i, 1);
+      form.rewardTiers.forEach((t, idx) => { t.times = idx + 1; });
+    };
+    const addTierRow = (ti) => {
+      if (form.rewardTiers[ti].rows.length >= 50) return ElMessage.warning('每个充值次数最多 50 个档位');
+      form.rewardTiers[ti].rows.push({depositAmt:null,actualAmt:null,pctAmt:null});
+    };
+    const removeTierRow = (ti, ri) => {
+      if (form.rewardTiers[ti].rows.length <= 8) return ElMessage.warning('每个充值次数至少保留 8 个档位');
+      form.rewardTiers[ti].rows.splice(ri, 1);
+    };
+
+    // ── 奖励配置 阶梯递增校验 ──
+    // tierErrors[ti] = Array<string>  (该次数卡片下的错误消息列表)
+    // tierInvalidCells[ti] = Set<rowIdx>  (该次数卡片下违规的行号)
+    const tierErrors = Vue.reactive({});
+    const tierInvalidRows = Vue.reactive({});
+    let _toastThrottle = 0;
+    const _toastErrThrottled = (msg) => {
+      const now = Date.now();
+      if (now - _toastThrottle < 2000) return;
+      _toastThrottle = now;
+      ElMessage.error(msg);
+    };
+
+    const isTierRowInvalid = (ti, ri) => {
+      const s = tierInvalidRows[ti];
+      return !!(s && s.has(ri));
+    };
+
+    const validateTierStep = (ti) => {
+      const tier = form.rewardTiers[ti];
+      if (!tier) return;
+      const errs = [];
+      const bad = new Set();
+      const rows = tier.rows || [];
+      for (let i = 0; i < rows.length; i++) {
+        const cur = Number(rows[i].depositAmt);
+        // 充值金额必须为正数
+        if (rows[i].depositAmt !== null && rows[i].depositAmt !== '' && (!isFinite(cur) || cur <= 0)) {
+          errs.push(`第 ${i+1} 档充值金额须大于 0`);
+          bad.add(i);
+        }
+        if (!isFinite(cur) || cur <= 0) continue;
+        if (i === 0) continue;
+        // 找到上一行有效充值金额
+        let prevIdx = -1;
+        for (let j = i - 1; j >= 0; j--) {
+          const v = Number(rows[j].depositAmt);
+          if (isFinite(v) && v > 0) { prevIdx = j; break; }
+        }
+        if (prevIdx >= 0 && cur <= Number(rows[prevIdx].depositAmt)) {
+          errs.push(`第 ${i+1} 档充值金额（${cur}）须大于第 ${prevIdx+1} 档（${rows[prevIdx].depositAmt}）`);
+          bad.add(i);
+        }
+        // 固定金额模式：奖励金额须 > 0
+        if (form.globalAmtType === 'fixed') {
+          const act = Number(rows[i].actualAmt);
+          if (isFinite(act) && act <= 0) {
+            errs.push(`第 ${i+1} 档奖励金额须 > 0`);
+            bad.add(i);
+          }
+        }
+        // 比例模式：奖励比例 > 0
+        if (form.globalAmtType === 'pct') {
+          const p = Number(rows[i].pctAmt);
+          if (rows[i].pctAmt !== null && rows[i].pctAmt !== '' && (!isFinite(p) || p <= 0)) {
+            errs.push(`第 ${i+1} 档奖励比例须为正数`);
+            bad.add(i);
+          }
+        }
+      }
+      tierErrors[ti] = errs;
+      tierInvalidRows[ti] = bad;
+      if (errs.length) _toastErrThrottled(errs[0]);
+    };
+
+    const validateAllTiers = () => {
+      let firstBadTi = -1;
+      (form.rewardTiers || []).forEach((_, ti) => {
+        validateTierStep(ti);
+        if (firstBadTi < 0 && (tierErrors[ti] || []).length) firstBadTi = ti;
+      });
+      return firstBadTi;
+    };
+
+    const hasAnyTierError = Vue.computed(() => {
+      return Object.values(tierErrors).some(arr => Array.isArray(arr) && arr.length > 0);
+    });
+    const totalTierErrorCount = Vue.computed(() => {
+      let n = 0;
+      Object.values(tierErrors).forEach(arr => { if (Array.isArray(arr)) n += arr.length; });
+      return n;
+    });
+
+    const clearTierErrors = () => {
+      Object.keys(tierErrors).forEach(k => delete tierErrors[k]);
+      Object.keys(tierInvalidRows).forEach(k => delete tierInvalidRows[k]);
+    };
+
+    // ── 恢复初始配置 ──
+    const showResetConfirm = Vue.ref(false);
+
+    const confirmResetReward = () => { showResetConfirm.value = true; };
+
+    const DEFAULT_REWARD_ROWS = () => [{depositAmt:100,actualAmt:20,pctAmt:null},{depositAmt:500,actualAmt:100,pctAmt:null},{depositAmt:1000,actualAmt:200,pctAmt:null},{depositAmt:2000,actualAmt:500,pctAmt:null},{depositAmt:5000,actualAmt:1000,pctAmt:null},{depositAmt:10000,actualAmt:2000,pctAmt:null},{depositAmt:20000,actualAmt:3000,pctAmt:null},{depositAmt:50000,actualAmt:5000,pctAmt:null}];
+
+    const doResetReward = () => {
+      form.rewardTiers = [
+        { times:1, rows: DEFAULT_REWARD_ROWS() },
+        { times:2, rows: DEFAULT_REWARD_ROWS() },
+        { times:3, rows: DEFAULT_REWARD_ROWS() },
+        { times:4, rows: DEFAULT_REWARD_ROWS() },
+        { times:5, rows: DEFAULT_REWARD_ROWS() },
+      ];
+      form.perDepositEnabled = false;
+      form.perDepositRows = DEFAULT_REWARD_ROWS();
+      form.dailyFirstEnabled = false;
+      form.dailyFirstRows = DEFAULT_REWARD_ROWS();
+      form.globalAmtType = 'fixed';
+      clearTierErrors();
+      showResetConfirm.value = false;
+      ElMessage.success('已恢复为初始默认配置');
+    };
+
+    // ── 累积充值（cumulative）helpers ──
+    const CUM_LEVEL_COLORS = ['#CD7F32', '#C0C0C0', '#FFD700', '#E5E4E2', '#B9F2FF', '#FF8A65', '#9575CD', '#4FC3F7', '#81C784', '#FFD54F'];
+    const cumLevelColor = (idx) => CUM_LEVEL_COLORS[idx] || '#909399';
+
+    const DEFAULT_CUM_LEVELS = () => [
+      { name:'青铜会员', threshold:100,   reward:20 },
+      { name:'白银会员', threshold:500,   reward:100 },
+      { name:'黄金会员', threshold:2000,  reward:500 },
+      { name:'铂金会员', threshold:10000, reward:2000 },
+      { name:'钻石会员', threshold:50000, reward:10000 },
+    ];
+
+    const addCumLevel = () => {
+      if (form.cumLevels.length >= 50) return ElMessage.warning('已达上限，最多配置 50 级');
+      const last = form.cumLevels[form.cumLevels.length - 1] || {threshold:0, reward:0};
+      form.cumLevels.push({
+        name: '新等级',
+        threshold: (Number(last.threshold) || 0) * 2 || 100,
+        reward:    (Number(last.reward)    || 0) * 2 || 20,
+      });
+    };
+    const removeCumLevel = (i) => {
+      if (form.cumLevels.length <= 2) return ElMessage.warning('至少保留 2 级');
+      form.cumLevels.splice(i, 1);
+    };
+
+    const showCumResetConfirm = Vue.ref(false);
+    const confirmResetCumLevels = () => { showCumResetConfirm.value = true; };
+    const doResetCumLevels = () => {
+      form.cumLevels = DEFAULT_CUM_LEVELS();
+      form.cumCycleType = 'rolling';
+      form.cumCycleDays = 7;
+      form.cumHighlights = [
+        { title:{en:'7-Day Activity Cycle',fil:'7-Day Activity Cycle',vi:'Chu kỳ 7 ngày',zh:'7天活动周期'}, content:{en:'Starting from your first deposit, reach the target within 7 days to earn rewards.',fil:'Mula sa unang deposito, maabot ang target sa loob ng 7 araw.',vi:'Từ lần nạp đầu tiên, đạt mục tiêu trong 7 ngày để nhận thưởng.',zh:'自首次充值起计算，7天内累计充值即可获得奖励'} },
+        { title:{en:'5-Level Rewards',fil:'5-Level Rewards',vi:'5 cấp độ phần thưởng',zh:'5级奖励递进'}, content:{en:'From LV.1 to LV.5, the more you deposit, the higher your reward.',fil:'Mula LV.1 hanggang LV.5, mas malaki ang deposito mas malaki ang gantimpala.',vi:'Từ LV.1 đến LV.5, nạp càng nhiều thưởng càng cao.',zh:'从LV.1到LV.5，充值越多奖励越高'} },
+        { title:{en:'Instant Settlement',fil:'Instant Settlement',vi:'Thanh toán tức thì',zh:'实时到账'}, content:{en:'Rewards are credited to your account immediately after claiming.',fil:'Ang mga gantimpala ay agad na ilipat pagkatapos ng pag-claim.',vi:'Phần thưởng được ghi có ngay sau khi nhận.',zh:'奖励领取后立即发放至账户，无需等待'} },
+      ];
+      form.cumClaimMode = 'manual';
+      form.cumDispatchMode = 'manual_void';
+      form.cumClaimTimeMode = 'nextDay';
+      form.cumClaimTime = '00:00';
+      form.cumClaimExpireDays = 1;
+      form.cumManualReview = 'no';
+      form.cumExpire = { clearAmount:true, expireReward:true, allowRestart:true };
+      form.cumDisplay = { marquee:true, leaderboard:true, countdown:true };
+      showCumResetConfirm.value = false;
+      ElMessage.success('已恢复为初始默认配置');
+    };
+
+    const onLevelSelectAll = (val) => {
+      form.levelOptions.forEach(lv => { form.levelChecked[lv] = val; });
+    };
+    const onLevelCheck = () => {
+      form.levelSelectAll = form.levelOptions.every(lv => form.levelChecked[lv]);
+    };
+    const closeDlg = () => {
+      ElMessageBox.confirm('未保存的修改将丢失，确认关闭？','提示',{
+        type:'warning',confirmButtonText:'关闭',cancelButtonText:'继续编辑'
+      }).then(()=>hideDlg()).catch(()=>{});
+    };
+    // 长期切换：开始时间填当前，结束时间置空，选择器保持样式但置灰
+    const _getNow = () => {
+      const d = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    // 展示时间与起止时间包含关系校验
+    const timeRangeErr = Vue.reactive({msg:''});
+    const validateTimeRange = () => {
+      timeRangeErr.msg = '';
+      if (form.displayPermanent || form.activePermanent) return;
+      if (!form.displayTimeRange?.[0] || !form.activeTimeRange?.[0]) return;
+      const dispStart = new Date(form.displayTimeRange[0]).getTime();
+      const dispEnd   = form.displayTimeRange[1] ? new Date(form.displayTimeRange[1]).getTime() : Infinity;
+      const actStart  = new Date(form.activeTimeRange[0]).getTime();
+      const actEnd    = form.activeTimeRange[1] ? new Date(form.activeTimeRange[1]).getTime() : Infinity;
+      if (dispStart > actStart || dispEnd < actEnd)
+        timeRangeErr.msg = '注意：展示时间必须完整包含活动起止时间（展示开始 ≤ 起止开始，展示结束 ≥ 起止结束）';
+    };
+
+    const onToggleDisplayPermanent = () => {
+      form.displayPermanent = !form.displayPermanent;
+      if (form.displayPermanent) form.displayTimeRange = [_getNow(), null];
+    };
+    const onToggleActivePermanent = () => {
+      form.activePermanent = !form.activePermanent;
+      if (form.activePermanent) form.activeTimeRange = [_getNow(), null];
+    };
+
+    const onSave = (asDraft) => {
+      // 1. 活动名称
+      if (!form.langs || !form.langs.length) {
+        return ElMessage.warning('至少保留 1 个语言');
+      }
+      if (!form.langContent[activeLang.value]?.name?.trim()) {
+        return ElMessage.warning('请输入活动名称');
+      }
+      // 2. 展示时间
+      timeRangeErr.msg = '';
+      if (!asDraft && !form.displayPermanent && (!form.displayTimeRange||!form.displayTimeRange[0]))
+        return ElMessage.warning('请设置展示时间');
+      // 活动起止时间必须包含展示时间
+      if (!asDraft && !form.displayPermanent && !form.activePermanent &&
+          form.displayTimeRange && form.displayTimeRange[0] && form.activeTimeRange && form.activeTimeRange[0]) {
+        const dispStart = new Date(form.displayTimeRange[0]).getTime();
+        const dispEnd   = form.displayTimeRange[1] ? new Date(form.displayTimeRange[1]).getTime() : Infinity;
+        const actStart  = new Date(form.activeTimeRange[0]).getTime();
+        const actEnd    = form.activeTimeRange[1] ? new Date(form.activeTimeRange[1]).getTime() : Infinity;
+        if (dispStart > actStart || dispEnd < actEnd)
+          return ElMessage.warning('展示时间必须完整包含活动起止时间（展示开始 ≤ 起止开始，展示结束 ≥ 起止结束）');
+      }
+
+      // 2b. 起止时间必须包含展示时间
+      if (!asDraft) {
+        const dispStart = form.displayPermanent ? form.displayTimeRange[0] : (form.displayTimeRange?.[0] || null);
+        const dispEnd   = form.displayPermanent ? null : (form.displayTimeRange?.[1] || null);
+        const actStart  = form.activePermanent  ? form.activeTimeRange[0]   : (form.activeTimeRange?.[0]  || null);
+        const actEnd    = form.activePermanent  ? null : (form.activeTimeRange?.[1]  || null);
+
+        if (!actStart)
+          return ElMessage.warning('请设置起止时间开始时间');
+
+        // 展示开始须 ≤ 起止开始
+        if (dispStart && actStart && dispStart > actStart)
+          return ElMessage.warning('展示时间开始须早于或等于起止时间开始（展示时间必须完整包含活动起止时间）');
+
+        // 若起止时间有结束时间，展示时间结束须 ≥ 起止结束（或展示时间为长期）
+        if (actEnd && !form.displayPermanent) {
+          if (!dispEnd)
+            return ElMessage.warning('起止时间设有结束时间，展示时间结束须晚于或等于起止时间结束');
+          if (dispEnd < actEnd)
+            return ElMessage.warning('展示时间结束须晚于或等于起止时间结束（展示时间必须完整包含活动起止时间）');
+        }
+      }
+
+      // 3. 奖励配置（无通道币种不校验）
+      if (!asDraft && !form.noChannel) {
+        if (activeType.value === 'cumulative') {
+          // 累积充值校验
+          if (!form.cumCycleDays || form.cumCycleDays < 1) return ElMessage.warning('请设置活动周期天数');
+          if (!form.cumLevels.length || form.cumLevels.length < 2) return ElMessage.warning('累积充值至少需要 2 个等级');
+          for (let i = 0; i < form.cumLevels.length; i++) {
+            const lv = form.cumLevels[i];
+            if (lv.threshold === '' || lv.threshold === null || isNaN(Number(lv.threshold)) || Number(lv.threshold) <= 0)
+              return ElMessage.warning(`请填写 Lv.${i+1} 充值门槛（>0）`);
+            if (lv.reward === '' || lv.reward === null || isNaN(Number(lv.reward)) || Number(lv.reward) <= 0)
+              return ElMessage.warning(`请填写 Lv.${i+1} 奖励金额（>0）`);
+            if (i > 0 && Number(lv.threshold) <= Number(form.cumLevels[i-1].threshold))
+              return ElMessage.warning(`Lv.${i+1} 充值门槛（${lv.threshold}）须大于 Lv.${i} 的门槛（${form.cumLevels[i-1].threshold}）`);
+            if (form.auditMode === 'amt' && lv.auditAmt !== '' && lv.auditAmt !== null && Number(lv.auditAmt) <= 0)
+              return ElMessage.warning(`Lv.${i+1} 稽核金额须大于 0`);
+          }
+        } else {
+          // 充值大礼包 — 阶梯递增全量校验 + 定位到首处违规
+          const firstBadTi = validateAllTiers();
+          if (firstBadTi >= 0) {
+            ElMessage.error('活动奖励金额配置有误，请检查后提交');
+            Vue.nextTick(() => {
+              const anchor = document.getElementById('reward-config-anchor');
+              if (anchor) anchor.scrollIntoView({behavior:'smooth', block:'start'});
+            });
+            return;
+          }
+          // 其他基础校验（兼容原逻辑）
+          if (form.quickAmounts && form.quickAmounts.filter(q=>q.val).length < 2) return ElMessage.warning('快捷金额至少需要 2 个');
+        }
+      }
+      ElMessage.success({message: asDraft?'已存为草稿':'提交成功 🎉', duration:2000});
+      if (!asDraft) setTimeout(hideDlg, 1500);
+    };
+
+    // ── push 方法（避免模板花括号导致 Vue 编译错误）──
+    const addPerDepositRow  = () => form.perDepositRows.push({depositAmt:null,actualAmt:null,pctAmt:null});
+    const addDailyFirstRow  = () => form.dailyFirstRows.push({depositAmt:null,actualAmt:null,pctAmt:null});
+    const addCumHighlight   = () => form.cumHighlights.push({title:{en:'',hi:''},content:{en:'',hi:''}});
+    // ── 稽核金额自动填充 ──
+    const fillAuditAmt      = (row) => { if (!row.auditAmt && row.auditAmt !== 0) row.auditAmt = form.globalAmtType === 'fixed' ? row.actualAmt : row.pctAmt; };
+    const fillAuditAmtLv    = (lv)  => { if (!lv.auditAmt  && lv.auditAmt  !== 0) lv.auditAmt  = lv.reward; };
+
+    // 累积充值门槛实时递增校验
+    const cumLevelErrors = Vue.reactive({});
+
+    // 笔笔送阶梯递增校验
+    const perDepositErrors = Vue.reactive({});
+    const validatePerDeposit = () => {
+      Object.keys(perDepositErrors).forEach(k => delete perDepositErrors[k]);
+      const rows = form.perDepositRows;
+      for (let i = 0; i < rows.length; i++) {
+        const cur = Number(rows[i].depositAmt);
+        if (rows[i].depositAmt !== null && rows[i].depositAmt !== '' && (!isFinite(cur) || cur <= 0)) {
+          perDepositErrors[i] = `第 ${i+1} 档充值金额须大于 0`;
+        } else if (i > 0) {
+          const prev = Number(rows[i-1].depositAmt);
+          if (isFinite(cur) && cur > 0 && isFinite(prev) && prev > 0 && cur <= prev)
+            perDepositErrors[i] = `第 ${i+1} 档充值金额（${cur}）须大于第 ${i} 档（${prev}）`;
+        }
+      }
+      const firstErr = Object.values(perDepositErrors)[0];
+      if (firstErr) _toastErrThrottled(firstErr);
+    };
+
+    // 每日首存阶梯递增校验
+    const dailyFirstErrors = Vue.reactive({});
+    const validateDailyFirst = () => {
+      Object.keys(dailyFirstErrors).forEach(k => delete dailyFirstErrors[k]);
+      const rows = form.dailyFirstRows;
+      for (let i = 0; i < rows.length; i++) {
+        const cur = Number(rows[i].depositAmt);
+        if (rows[i].depositAmt !== null && rows[i].depositAmt !== '' && (!isFinite(cur) || cur <= 0)) {
+          dailyFirstErrors[i] = `第 ${i+1} 档充值金额须大于 0`;
+        } else if (i > 0) {
+          const prev = Number(rows[i-1].depositAmt);
+          if (isFinite(cur) && cur > 0 && isFinite(prev) && prev > 0 && cur <= prev)
+            dailyFirstErrors[i] = `第 ${i+1} 档充值金额（${cur}）须大于第 ${i} 档（${prev}）`;
+        }
+      }
+      const firstErr = Object.values(dailyFirstErrors)[0];
+      if (firstErr) _toastErrThrottled(firstErr);
+    };
+    // 通用两位小数过滤
+    const clampField = (obj, field, e) => {
+      let v = (e && e.target ? e.target.value : String(obj[field] ?? ''));
+      v = v.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      if (parts[1] !== undefined) v = parts[0] + '.' + parts[1].slice(0, 2);
+      obj[field] = v;
+    };
+
+    // 稽核金额限制两位小数（实时过滤）
+    const clampAuditAmt = (row, field, e) => {
+      let v = (e && e.target ? e.target.value : String(row[field] ?? ''));
+      v = v.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      if (parts[1] !== undefined) v = parts[0] + '.' + parts[1].slice(0, 2);
+      row[field] = v;
+    };
+    const clampLvAudit = (lv, e) => {
+      let v = (e && e.target ? e.target.value : String(lv.auditAmt ?? ''));
+      v = v.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      if (parts[1] !== undefined) v = parts[0] + '.' + parts[1].slice(0, 2);
+      lv.auditAmt = v;
+    };
+
+    let _cumThresholdToast = 0;
+    const validateCumThreshold = () => {
+      Object.keys(cumLevelErrors).forEach(k => delete cumLevelErrors[k]);
+      let firstMsg = '';
+      form.cumLevels.forEach((lv, i) => {
+        const cur = Number(lv.threshold);
+        if (lv.threshold !== '' && lv.threshold !== null && (!isFinite(cur) || cur <= 0)) {
+          const msg = `Lv.${i+1} 充值门槛须大于 0`;
+          cumLevelErrors[i] = msg;
+          if (!firstMsg) firstMsg = msg;
+        } else if (i > 0) {
+          const prev = Number(form.cumLevels[i-1].threshold);
+          if (isFinite(cur) && cur > 0 && isFinite(prev) && prev > 0 && cur <= prev) {
+            const msg = `Lv.${i+1} 充值门槛（${cur}）须大于 Lv.${i} 的门槛（${prev}）`;
+            cumLevelErrors[i] = msg;
+            if (!firstMsg) firstMsg = msg;
+          }
+        }
+      });
+      if (firstMsg) {
+        const now = Date.now();
+        if (now - _cumThresholdToast > 1500) { _cumThresholdToast = now; ElMessage.warning(firstMsg); }
+      }
+    };
+
+    return {
+      activeType, activeLang, typeOpts, catOpts, currOpts, langOpts, langLabel, langFlag,
+      form, onLangChange, onIconUp, onBannerUp,
+      showResetConfirm, confirmResetReward, doResetReward,
+      tierLabel, addQuick, removeQuick, addTier, removeTier, addTierRow, removeTierRow,
+      onDepositTimesChange, onQuickCountChange,
+      onLevelSelectAll, onLevelCheck, openUpDlg,
+      betCategories, betPanelOpen, betActiveCategory, activeBetVenues, betSelectedTags,
+      isCatChecked, isCatPartial, toggleCat, onVenueChange, removeBetTag,
+      // 阶梯递增校验
+      tierErrors, isTierRowInvalid, validateTierStep, hasAnyTierError, totalTierErrorCount,
+      // 累积充值
+      cumLevelColor, addCumLevel, removeCumLevel,
+      showCumResetConfirm, confirmResetCumLevels, doResetCumLevels,
+      closeDlg, onSave,
+      onToggleDisplayPermanent, onToggleActivePermanent,
+      validateTimeRange, timeRangeErr,
+      validateAllTiers, validateTierStep,
+      addPerDepositRow, addDailyFirstRow, addCumHighlight,
+      addTierRow, removeTierRow,
+      fillAuditAmt, fillAuditAmtLv,
+      cumLevelErrors, validateCumThreshold,
+      perDepositErrors, validatePerDeposit,
+      dailyFirstErrors, validateDailyFirst,
+      clampAuditAmt, clampLvAudit, clampField,
+      // 分享转盘
+      showSpinPhoneDetail, showSpinFreeDetail,
+      SPIN_PHONE_MOCK, SPIN_FREE_MOCK,
+      SPIN_TASK_OPTS, spinTaskUnit, spinTaskAvailableOpts, onSpinTaskNameChange,
+      spinTaskTop, spinTaskUp, spinTaskDown, spinTaskAdd, spinTaskRemove,
+      clampSpinTaskCond, clampSpinTaskSpins,
+      onSpinPhoneUp, onSpinFreeListUp,
+      spinProbSum, spinProbOk, clampSpinProb, clampSpinAmt, clampSpinCond,
+    };
+  }
+}).use(ElementPlus)
+  .use({ install(a) { if(typeof ElementPlusIconsVue!=="undefined"){for (const [k,c] of Object.entries(ElementPlusIconsVue)) a.component(k,c)}; } })
+  .mount('.dlg');
+
+/* ── 批量上传全局函数 ── */
+let _pendingFile = null;
+let _parsedRows = [];      // 校验通过的行（用于"上传"）
+let _parsedErrors = [];    // 错误清单 [{row, field, reason}]
+let _previewRows = [];     // 用于预览的前 50 行原始数据
+
+function _resetUpDlg() {
+  _pendingFile = null;
+  _parsedRows = [];
+  _parsedErrors = [];
+  _previewRows = [];
+  const $ = id => document.getElementById(id);
+  $('up-file-input').value = '';
+  $('up-fname').textContent = '';
+  $('up-progress').style.display = 'none';
+  $('up-progress-bar').style.width = '0%';
+  $('up-result-summary').style.display = 'none';
+  $('up-result-summary').className = '';
+  $('up-result-summary').textContent = '';
+  $('up-error-list').style.display = 'none';
+  $('up-error-tbody').innerHTML = '';
+  $('up-preview').style.display = 'none';
+  $('up-preview-body').innerHTML = '';
+  $('up-guide-block').style.display = '';
+  $('up-confirm-btn').disabled = false;
+}
+
+function hideUpDlg() {
+  document.getElementById('up-dlg-mask').classList.remove('show');
+  _resetUpDlg();
+}
+
+/* CSV 简单解析（支持引号转义） */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i+1];
+    if (inQ) {
+      if (c === '"' && n === '"') { cell += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cell += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+/* 主校验：传入 rows 二维数组，返回 {ok, errors, valid, preview} */
+function validateRows(rows, expectField /* 'UID' | 'PHONE' */) {
+  const errors = [];
+  // 文件级：表头
+  if (!rows.length) {
+    errors.push({ row: 0, field: '文件', reason: '文件为空或解析失败' });
+    return { ok: false, errors, valid: [], preview: [] };
+  }
+  const header = (rows[0][0] || '').toString().trim();
+  const wantHeader = expectField === 'UID' ? 'UID' : '手机号码/Phone';
+  if (header !== wantHeader && header.toLowerCase() !== wantHeader.toLowerCase()) {
+    errors.push({ row: 1, field: '表头', reason: `第 1 行表头错误：期望 "${wantHeader}"，实际 "${header || '空'}"` });
+  }
+  // 行级
+  const dataRows = rows.slice(1).filter(r => r.some(c => (c||'').toString().trim() !== ''));
+  if (dataRows.length > 1000) {
+    errors.push({ row: 0, field: '数据条数', reason: `单次上传最多 1000 条，当前 ${dataRows.length} 条` });
+  }
+  const seen = new Map();
+  const valid = [];
+  dataRows.forEach((r, idx) => {
+    const lineNo = idx + 2; // 实际行号（表头算第 1 行）
+    const v = (r[0] || '').toString().trim();
+    if (!v) {
+      errors.push({ row: lineNo, field: expectField, reason: `第 ${lineNo} 行 ${expectField === 'UID' ? 'UID' : '手机号'}为空` });
+      return;
+    }
+    if (expectField === 'UID') {
+      if (!/^\d+$/.test(v)) {
+        errors.push({ row: lineNo, field: 'UID', reason: `第 ${lineNo} 行 UID 格式错误（仅支持数字）` });
+        return;
+      }
+    } else {
+      if (!/^\+?\d[\d\-\s]{5,19}$/.test(v)) {
+        errors.push({ row: lineNo, field: '手机号', reason: `第 ${lineNo} 行 手机号格式错误` });
+        return;
+      }
+    }
+    if (seen.has(v)) {
+      errors.push({ row: lineNo, field: expectField, reason: `第 ${lineNo} 行与第 ${seen.get(v)} 行 ${expectField === 'UID' ? 'UID' : '手机号'} 重复` });
+      return;
+    }
+    seen.set(v, lineNo);
+    valid.push(v);
+  });
+  return { ok: errors.length === 0, errors, valid, preview: dataRows.slice(0, 50) };
+}
+
+function _renderResult(summary, valid, errors, preview) {
+  const $ = id => document.getElementById(id);
+  $('up-progress').style.display = 'none';
+  $('up-result-summary').style.display = '';
+  if (errors.length === 0) {
+    $('up-result-summary').className = 'up-summary-ok';
+    $('up-result-summary').innerHTML = `✓ 校验通过！共 ${valid.length} 条，可点击「确定」开始上传。`;
+    $('up-error-list').style.display = 'none';
+    $('up-preview').style.display = '';
+    $('up-preview-body').innerHTML = preview.map((r, i) => `<div>${i+1}. ${(r[0]||'').toString().trim()}</div>`).join('');
+    $('up-confirm-btn').disabled = false;
+  } else {
+    $('up-result-summary').className = 'up-summary-err';
+    $('up-result-summary').innerHTML = `✗ 校验失败！共 ${valid.length + errors.length} 条，<strong>${errors.length} 条错误</strong>，需重新上传。`;
+    $('up-error-list').style.display = '';
+    $('up-error-tbody').innerHTML = errors.map(e => `<tr><td>${e.row || '-'}</td><td>${e.field}</td><td>${e.reason}</td></tr>`).join('');
+    $('up-preview').style.display = 'none';
+    $('up-confirm-btn').disabled = true;
+  }
+}
+
+function onUpFileChange(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  _resetUpDlg();
+  _pendingFile = f;
+  const $ = id => document.getElementById(id);
+  $('up-fname').textContent = f.name;
+
+  // 文件类型校验
+  const okExt = /\.(xls|xlsx|csv)$/i.test(f.name);
+  if (!okExt) {
+    _renderResult(null, [], [{ row: 0, field: '文件类型', reason: '仅支持 xls/xlsx/csv 格式' }], []);
+    return;
+  }
+  // 文件大小
+  if (f.size > 50 * 1024 * 1024) {
+    _renderResult(null, [], [{ row: 0, field: '文件大小', reason: `文件 ${(f.size/1024/1024).toFixed(2)} MB，超过 50 MB 限制，请拆分后上传` }], []);
+    return;
+  }
+
+  // 解析（CSV 直接读取，xls/xlsx 演示用：提示由后端解析）
+  $('up-progress').style.display = '';
+  let pct = 0;
+  const tick = setInterval(() => { pct = Math.min(pct + 12, 90); $('up-progress-bar').style.width = pct + '%'; }, 80);
+
+  const expectField = window._upType === 'phone' ? 'PHONE' : 'UID';
+
+  if (/\.csv$/i.test(f.name)) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      clearInterval(tick);
+      $('up-progress-bar').style.width = '100%';
+      setTimeout(() => {
+        const rows = parseCSV(ev.target.result || '');
+        const { errors, valid, preview } = validateRows(rows, expectField);
+        _parsedErrors = errors;
+        _parsedRows = valid;
+        _previewRows = preview;
+        _renderResult(null, valid, errors, preview);
+      }, 150);
+    };
+    reader.onerror = () => {
+      clearInterval(tick);
+      _renderResult(null, [], [{ row: 0, field: '文件', reason: '文件读取失败' }], []);
+    };
+    reader.readAsText(f, 'utf-8');
+  } else {
+    // xls/xlsx 演示：提示前端不解析，但展示校验流程
+    setTimeout(() => {
+      clearInterval(tick);
+      $('up-progress-bar').style.width = '100%';
+      setTimeout(() => {
+        // 模拟：从文件名/大小推测 1 条合法 + 0 条错误的"成功"场景，让用户看到完整流程
+        const demoValid = ['10001234', '10001235', '10001236'];
+        _parsedErrors = [];
+        _parsedRows = demoValid;
+        _previewRows = demoValid.map(v => [v]);
+        _renderResult(null, demoValid, [], _previewRows);
+      }, 200);
+    }, 600);
+  }
+}
+
+function confirmUpload() {
+  if (!_pendingFile) {
+    ElementPlus.ElMessage.warning('请先选择文件');
+    return;
+  }
+  if (_parsedErrors.length) {
+    ElementPlus.ElMessage.error(`存在 ${_parsedErrors.length} 条错误，请修正后重新上传`);
+    return;
+  }
+  const fname = _pendingFile.name;
+  const type = window._upType;
+  const evt = new CustomEvent('upload-done', { detail: { type, fname, count: _parsedRows.length } });
+  document.dispatchEvent(evt);
+  ElementPlus.ElMessage.success(`上传成功！共 ${_parsedRows.length} 条，${_parsedRows.length} 条成功`);
+  hideUpDlg();
+}
+
+function downloadErrors() {
+  if (!_parsedErrors.length) return;
+  const header = '行号,字段,原因';
+  const body = _parsedErrors.map(e => `${e.row || ''},${e.field},"${e.reason.replace(/"/g, '""')}"`).join('\n');
+  const blob = new Blob(['\ufeff' + header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '上传错误清单.csv';
+  a.click();
+}
+
+function downloadTpl() {
+  const type = window._upType;
+  const rows = type === 'phone'
+    ? [['手机号码/Phone'], ['111']]
+    : [['UID'], ['']];
+  let csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = type === 'phone' ? '上传手机号模版.csv' : '上传UID模版.csv';
+  a.click();
+}
+</script>
+</body>
+</html>

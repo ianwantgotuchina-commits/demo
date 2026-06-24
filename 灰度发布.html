@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>灰度发布管理</title>
+<link rel="stylesheet" href="./element-plus.css">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  html, body { margin: 0; background: #f0f2f5; }
+  #app { padding: 16px; }
+  [v-cloak] { display: none; }
+
+  /* 顶部全局信息条 */
+  .gray-topbar { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #ebeef5; border-radius:4px; padding:10px 16px; margin-bottom:12px; }
+  .gray-topbar .tb-left { display:flex; align-items:center; gap:10px; }
+  .gray-topbar .tb-title { font-size:15px; font-weight:600; color:#1f2937; }
+  .gray-topbar .tb-ver { font-size:12px; color:#6b7280; }
+  .gray-topbar .tb-ver b { color:#409eff; font-family:monospace; font-size:13px; }
+
+  /* 投放规则摘要单元格 */
+  .rule-summary { display:flex; flex-wrap:wrap; gap:4px; }
+  .rule-summary .el-tag { margin:0; }
+
+  /* 弹窗内分区标题 */
+  .form-section { font-size:13px; font-weight:600; color:#1f2937; margin:6px 0 12px; padding-left:8px; border-left:3px solid #409eff; }
+  .form-tip { color:#9ca3af; font-size:12px; line-height:1.6; margin-top:4px; }
+  .form-tip.warn { color:#e6a23c; }
+
+  /* 命中测试器 */
+  .sim-result-card { margin-top:12px; }
+  .sim-step { padding:8px 12px; border-radius:4px; margin-bottom:8px; font-size:13px; display:flex; align-items:center; gap:8px; }
+  .sim-step.pass { background:#f0f9eb; color:#67c23a; }
+  .sim-step.fail { background:#fef0f0; color:#f56c6c; }
+  .sim-step.info { background:#f4f4f5; color:#606266; }
+  .sim-hit-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .mono { font-family:monospace; }
+  .cell-dash { color:#c0c4cc; }
+
+  /* 操作日志 前后对比 */
+  .diff-box { font-family:monospace; font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-all; color:#606266; }
+
+  /* 数据看板 KPI 卡片 */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .kpi-card { border:1px solid #ebeef5; border-radius:6px; padding:14px 16px; background:#fff; }
+  .kpi-card.good { border-left:3px solid #67c23a; }
+  .kpi-card.bad  { border-left:3px solid #f56c6c; }
+  .kpi-card.flat { border-left:3px solid #909399; }
+  .kpi-label { font-size:12px; color:#909399; }
+  .kpi-main { margin:6px 0 4px; display:flex; align-items:baseline; gap:3px; }
+  .kpi-val { font-size:24px; font-weight:700; color:#1f2937; line-height:1; }
+  .kpi-unit { font-size:12px; color:#909399; }
+  .kpi-foot { display:flex; align-items:center; justify-content:space-between; }
+  .kpi-ctrl { font-size:12px; color:#9ca3af; }
+  .kpi-lift { font-size:12px; font-weight:600; padding:1px 6px; border-radius:10px; }
+  .kpi-lift.up { color:#67c23a; background:#f0f9eb; }
+  .kpi-lift.down { color:#f56c6c; background:#fef0f0; }
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <gray-release></gray-release>
+</div>
+
+<!-- ══════════════════════ 灰度发布管理 ══════════════════════ -->
+<template id="gray-release-tpl">
+<div class="page">
+
+  <!-- 全局版本号信息条 -->
+  <div class="gray-topbar">
+    <div class="tb-left">
+      <span class="tb-title">灰度发布管理</span>
+      <el-tag size="small" type="info" effect="plain">功能级灰度 · 不做环境隔离</el-tag>
+    </div>
+    <div class="tb-ver">全局配置版本号 grayConfigVersion：<b>{{ grayConfigVersion }}</b>（任意配置变更 +1，前端据此刷新缓存）</div>
+  </div>
+
+  <!-- ─────────────── 灰度功能列表 ─────────────── -->
+  <template v-if="tab==='list'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="filters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="功能名称"><el-input v-model="filters.name" placeholder="功能名称" clearable/></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="功能Key"><el-input v-model="filters.key" placeholder="功能Key" clearable/></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="所属模块"><select v-model="filters.module" class="f-sel"><option value="">全部</option><option v-for="m in MODULES" :key="m" :value="m">{{ m }}</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="状态"><select v-model="filters.status" class="f-sel"><option value="">全部</option><option v-for="s in STATUS_LIST" :key="s" :value="s">{{ s }}</option></select></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="互斥组"><el-input v-model="filters.group" placeholder="互斥组" clearable/></el-form-item></el-col>
+          <el-col :span="10"><el-form-item label="生效时间"><el-date-picker v-model="filters.range" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="search">查询</el-button>
+          <el-button :icon="Refresh" @click="reset">重置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="table-card">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <el-button type="primary" :icon="Plus" @click="openCreate">新建灰度功能</el-button>
+          <el-checkbox v-model="showArchived" style="margin-left:12px">显示已归档</el-checkbox>
+        </div>
+        <div class="toolbar-right">
+          <span style="color:#6b7280;font-size:12px;">共 {{ filtered.length }} 个功能</span>
+        </div>
+      </div>
+      <el-table :data="paged" border stripe style="width:100%">
+        <el-table-column type="index" label="序号" width="60" align="center" :index="i=>(pag.page-1)*pag.size+i+1" fixed></el-table-column>
+        <el-table-column prop="name" label="功能名称" min-width="140" fixed></el-table-column>
+        <el-table-column prop="key" label="功能Key" min-width="190"><template #default="{row}"><span class="mono">{{ row.key }}</span></template></el-table-column>
+        <el-table-column prop="module" label="所属模块" width="100" align="center"></el-table-column>
+        <el-table-column label="状态" width="100" align="center"><template #default="{row}"><el-tag size="small" :type="STATUS_TAG[row.status]">{{ row.status }}</el-tag></template></el-table-column>
+        <el-table-column label="投放规则" min-width="260"><template #default="{row}">
+          <div class="rule-summary">
+            <template v-if="row.status==='已全量'"><el-tag size="small" type="success" effect="plain">全部会员</el-tag></template>
+            <template v-else-if="row.status==='已关闭'||row.status==='已归档'"><span class="cell-dash">—</span></template>
+            <template v-else>
+              <el-tag v-if="row.rules.whitelist.length" size="small" effect="plain">白名单 {{ row.rules.whitelist.length }} 人</el-tag>
+              <el-tag v-if="row.rules.vip.length" size="small" effect="plain">VIP：{{ row.rules.vip.join('/') }}</el-tag>
+              <el-tag v-for="t in row.rules.tags" :key="t" size="small" effect="plain">{{ t }}</el-tag>
+              <el-tag v-if="row.rules.regType!=='不限'" size="small" effect="plain">{{ regText(row.rules) }}</el-tag>
+              <el-tag size="small" type="warning" effect="plain">放量 {{ row.rules.percent }}%</el-tag>
+            </template>
+          </div>
+        </template></el-table-column>
+        <el-table-column label="互斥组 / 优先级" width="150" align="center"><template #default="{row}">
+          <template v-if="row.mutex"><span class="mono">{{ row.group }}</span><br><el-tag size="small" type="info" effect="plain">优先级 {{ row.priority }}</el-tag></template>
+          <span v-else class="cell-dash">—</span>
+        </template></el-table-column>
+        <el-table-column prop="effectiveTime" label="生效时间" min-width="160"></el-table-column>
+        <el-table-column label="结束时间" min-width="160"><template #default="{row}"><span v-if="row.endTime">{{ row.endTime }}</span><span v-else class="cell-dash">长期有效</span></template></el-table-column>
+        <el-table-column prop="updateTime" label="更新时间" min-width="160"></el-table-column>
+        <el-table-column prop="operator" label="操作人" width="90" align="center"></el-table-column>
+        <el-table-column label="操作" width="230" align="center" fixed="right"><template #default="{row}">
+          <div class="op-cell">
+            <el-button v-if="canEdit(row)" link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="row.status==='灰度中'" link type="success" size="small" @click="toFull(row)">推全量</el-button>
+            <el-button v-if="row.status==='已全量'" link type="warning" size="small" @click="rollbackToGray(row)">回退灰度</el-button>
+            <el-button v-if="row.status==='灰度中'||row.status==='已全量'||row.status==='未生效'" link type="danger" size="small" @click="toClosed(row)">{{ row.status==='未生效'?'取消':'关闭' }}</el-button>
+            <el-button v-if="row.status==='已关闭'" link type="primary" size="small" @click="reopen(row)">重新开启</el-button>
+            <el-button v-if="row.status==='已归档'" link type="primary" size="small" @click="restore(row)">恢复</el-button>
+            <el-button v-if="row.status!=='已归档'" link type="info" size="small" @click="archive(row)">归档</el-button>
+            <el-button link type="info" size="small" @click="openLog(row)">日志</el-button>
+          </div>
+        </template></el-table-column>
+        <template #empty><span style="color:#9ca3af">暂无数据</span></template>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="pag.page" v-model:page-size="pag.size" :total="filtered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+
+    <!-- 新建 / 编辑弹窗 -->
+    <el-dialog v-model="dlg.visible" :title="dlg.mode==='create'?'新建灰度功能':'编辑灰度功能'" width="720px" align-center :close-on-click-modal="false" top="6vh">
+      <el-form :model="dlg.form" label-width="96px" label-position="right" class="dlg-form">
+        <div class="form-section">基础信息</div>
+        <el-row :gutter="16">
+          <el-col :span="12"><el-form-item label="功能名称" required><el-input v-model="dlg.form.name" placeholder="如：新版充值页"/></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="功能Key" required>
+            <el-input v-model="dlg.form.key" placeholder="如：new_recharge_page" :disabled="dlg.keyLocked"/>
+          </el-form-item></el-col>
+        </el-row>
+        <div v-if="dlg.keyLocked" class="form-tip" style="margin:-8px 0 12px 96px">灰度中 / 已全量状态下不允许修改功能 Key。</div>
+        <el-row :gutter="16">
+          <el-col :span="12"><el-form-item label="所属模块" required><el-select v-model="dlg.form.module" placeholder="请选择" style="width:100%"><el-option v-for="m in MODULES" :key="m" :value="m" :label="m"/></el-select></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="初始状态" required><el-select v-model="dlg.form.status" style="width:100%"><el-option value="未生效" label="未生效（到达生效时间自动转灰度中）"/><el-option value="灰度中" label="灰度中"/></el-select></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12"><el-form-item label="生效时间" required><el-date-picker v-model="dlg.form.effectiveTime" type="datetime" placeholder="选择生效时间" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="结束时间"><el-date-picker v-model="dlg.form.endTime" type="datetime" placeholder="不填则长期有效" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <el-form-item label="灰度说明"><el-input v-model="dlg.form.desc" type="textarea" :rows="2" placeholder="说明本次灰度目的（选填）"/></el-form-item>
+
+        <div class="form-section">投放规则</div>
+        <el-form-item label="白名单">
+          <el-input v-model="dlg.form.rules.whitelistText" type="textarea" :rows="2" placeholder="会员ID，多个用逗号 / 空格 / 换行分隔。白名单会员直接命中，不再判断普通规则"/>
+        </el-form-item>
+        <el-form-item label="VIP等级">
+          <el-select v-model="dlg.form.rules.vip" multiple collapse-tags collapse-tags-tooltip placeholder="不限" style="width:100%">
+            <el-option v-for="v in VIP_LEVELS" :key="v" :value="v" :label="v"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="会员标签">
+          <el-checkbox-group v-model="dlg.form.rules.tags">
+            <el-checkbox v-for="t in MEMBER_TAGS" :key="t" :value="t">{{ t }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="注册时间">
+          <el-radio-group v-model="dlg.form.rules.regType">
+            <el-radio value="不限">不限</el-radio>
+            <el-radio value="最近7天">最近7天</el-radio>
+            <el-radio value="最近30天">最近30天</el-radio>
+            <el-radio value="自定义">自定义区间</el-radio>
+          </el-radio-group>
+          <el-date-picker v-if="dlg.form.rules.regType==='自定义'" v-model="dlg.form.rules.regRange" type="daterange" range-separator="至" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%;margin-top:8px"/>
+        </el-form-item>
+        <el-form-item label="百分比放量">
+          <div style="width:100%">
+            <el-slider v-model="dlg.form.rules.percent" :marks="{0:'0%',10:'10%',30:'30%',50:'50%',100:'100%'}" :max="100"/>
+            <div class="form-tip">分流公式：<span class="mono">slot = hash(memberId + "_" + featureKey) % 100</span>，命中条件 <span class="mono">slot &lt; {{ dlg.form.rules.percent }}</span>。加盐独立、对同一会员稳定、放量提升不剔除原命中会员。</div>
+            <div class="form-tip">硬条件(VIP/标签/注册时间)先准入，百分比作用于<b>满足硬条件的人群</b>，非全站会员。</div>
+          </div>
+        </el-form-item>
+
+        <div class="form-section">互斥设置</div>
+        <el-form-item label="是否互斥"><el-switch v-model="dlg.form.mutex"/></el-form-item>
+        <template v-if="dlg.form.mutex">
+          <el-row :gutter="16">
+            <el-col :span="12"><el-form-item label="互斥组" required><el-input v-model="dlg.form.group" placeholder="如：recharge_page"/></el-form-item></el-col>
+            <el-col :span="12"><el-form-item label="优先级" required><el-input-number v-model="dlg.form.priority" :min="1" :max="999" controls-position="right" style="width:100%"/></el-form-item></el-col>
+          </el-row>
+          <div class="form-tip">同一互斥组内同时命中多个功能时，<b>数字越大优先级越高</b>；白名单命中优先于普通规则命中。保存时禁止同组相同优先级。</div>
+        </template>
+      </el-form>
+      <template #footer>
+        <el-button @click="dlg.visible=false">取消</el-button>
+        <el-button type="primary" @click="submitForm">确定</el-button>
+      </template>
+    </el-dialog>
+  </template>
+
+  <!-- ─────────────── 命中测试器 ─────────────── -->
+  <template v-else-if="tab==='sim'">
+    <el-card shadow="never" class="filter-card">
+      <div class="form-section">模拟会员属性（演示后端「状态 → 白名单 → 硬条件 → 百分比 → 互斥裁决」命中逻辑）</div>
+      <el-form :model="sim" label-width="96px" label-position="right" size="default">
+        <el-row :gutter="16">
+          <el-col :span="8"><el-form-item label="会员ID"><el-input v-model="sim.memberId" placeholder="如 100001"/></el-form-item></el-col>
+          <el-col :span="8"><el-form-item label="VIP等级"><el-select v-model="sim.vip" style="width:100%"><el-option v-for="v in VIP_LEVELS" :key="v" :value="v" :label="v"/></el-select></el-form-item></el-col>
+          <el-col :span="8"><el-form-item label="注册距今"><el-input-number v-model="sim.regDays" :min="0" :max="3650" controls-position="right" style="width:100%"/><span class="form-tip"> 天前注册</span></el-form-item></el-col>
+        </el-row>
+        <el-form-item label="会员标签">
+          <el-checkbox-group v-model="sim.tags">
+            <el-checkbox v-for="t in MEMBER_TAGS" :key="t" :value="t">{{ t }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="runSim">计算命中</el-button>
+          <el-button :icon="Refresh" @click="resetSim">重置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card v-if="simResult" shadow="never" class="table-card sim-result-card">
+      <div class="form-section">最终命中结果（接口返回 grayFeatures）</div>
+      <div class="sim-hit-list">
+        <el-tag v-for="k in simResult.finalKeys" :key="k" type="success" effect="dark" class="mono">{{ k }}</el-tag>
+        <span v-if="!simResult.finalKeys.length" class="cell-dash">未命中任何灰度功能，全部展示旧版</span>
+      </div>
+
+      <div class="form-section" style="margin-top:18px">逐功能判定明细</div>
+      <el-table :data="simResult.detail" border stripe style="width:100%">
+        <el-table-column prop="key" label="功能Key" min-width="180"><template #default="{row}"><span class="mono">{{ row.key }}</span></template></el-table-column>
+        <el-table-column prop="status" label="状态" width="90" align="center"><template #default="{row}"><el-tag size="small" :type="STATUS_TAG[row.status]">{{ row.status }}</el-tag></template></el-table-column>
+        <el-table-column label="命中" width="80" align="center"><template #default="{row}"><el-tag size="small" :type="row.hit?'success':'info'">{{ row.hit?'命中':'未命中' }}</el-tag></template></el-table-column>
+        <el-table-column prop="way" label="命中方式" width="100" align="center"><template #default="{row}"><span v-if="row.way">{{ row.way }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+        <el-table-column prop="slot" label="slot" width="70" align="center"><template #default="{row}"><span v-if="row.slot!=null" class="mono">{{ row.slot }}</span><span v-else class="cell-dash">—</span></template></el-table-column>
+        <el-table-column prop="reason" label="判定说明" min-width="240"></el-table-column>
+        <el-table-column label="互斥裁决" width="100" align="center"><template #default="{row}">
+          <el-tag v-if="row.hit&&row.mutexLose" size="small" type="warning">被覆盖</el-tag>
+          <el-tag v-else-if="row.hit" size="small" type="success">保留</el-tag>
+          <span v-else class="cell-dash">—</span>
+        </template></el-table-column>
+      </el-table>
+    </el-card>
+  </template>
+
+  <!-- ─────────────── 数据看板 ─────────────── -->
+  <template v-else-if="tab==='dash'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="dash" label-width="96px" label-position="right" size="default">
+        <el-row :gutter="16">
+          <el-col :span="9"><el-form-item label="分析功能">
+            <el-select v-model="dash.featureKey" style="width:100%" @change="renderDash">
+              <el-option v-for="o in dashOptions" :key="o.key" :value="o.key" :label="o.name + '（' + o.key + '）'"/>
+            </el-select>
+          </el-form-item></el-col>
+          <el-col :span="10"><el-form-item label="统计周期"><el-date-picker v-model="dash.range" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+          <el-col :span="5"><el-form-item label-width="0"><el-button type="primary" :icon="Search" @click="renderDash">刷新对比</el-button></el-form-item></el-col>
+        </el-row>
+      </el-form>
+      <div class="form-tip">
+        <b>分组口径：</b>灰度组 = 命中新版的会员（<span class="mono">source_feature_key</span> 标记产生数据）；
+        对照组 = <b>满足相同硬条件、但未落入放量百分比</b>的同质会员（slot ≥ 放量%，走旧版）。两组同质可比，排除人群差异干扰。
+      </div>
+    </el-card>
+
+    <el-alert v-if="dashData" :type="rec.type" :closable="false" show-icon style="margin-bottom:12px">
+      <template #title><span style="font-weight:600">{{ rec.title }}</span></template>
+      <div style="font-size:12px;line-height:1.7;margin-top:2px">{{ rec.desc }}</div>
+    </el-alert>
+
+    <el-card v-if="dashData" shadow="never" class="table-card">
+      <div class="kpi-grid">
+        <div class="kpi-card" v-for="m in metrics" :key="m.label" :class="m.cls">
+          <div class="kpi-label">{{ m.label }}</div>
+          <div class="kpi-main"><span class="kpi-val">{{ m.gText }}</span><span class="kpi-unit">{{ m.unit }}</span></div>
+          <div class="kpi-foot">
+            <span class="kpi-ctrl">对照 {{ m.cText }}{{ m.unit }}</span>
+            <span v-if="m.showLift" class="kpi-lift" :class="m.good?'up':'down'">{{ m.liftText }}</span>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
+    <el-row :gutter="12" v-if="dashData">
+      <el-col :span="12"><el-card shadow="never" class="table-card"><div id="dashBar" style="height:330px"></div></el-card></el-col>
+      <el-col :span="12"><el-card shadow="never" class="table-card"><div id="dashLine" style="height:330px"></div></el-card></el-col>
+    </el-row>
+    <el-card v-if="dashData" shadow="never" class="table-card"><div id="dashFunnel" style="height:340px"></div></el-card>
+  </template>
+
+  <!-- ─────────────── 操作日志 ─────────────── -->
+  <template v-else-if="tab==='log'">
+    <el-card shadow="never" class="filter-card">
+      <el-form :model="logFilters" label-position="right" label-width="auto" size="default" class="filter-form">
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="6"><el-form-item label="功能Key"><el-input v-model="logFilters.key" placeholder="功能Key" clearable/></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="操作类型"><select v-model="logFilters.type" class="f-sel"><option value="">全部</option><option v-for="t in LOG_TYPES" :key="t" :value="t">{{ t }}</option></select></el-form-item></el-col>
+          <el-col :span="6"><el-form-item label="操作人"><el-input v-model="logFilters.operator" placeholder="操作人" clearable/></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="12" class="filter-row">
+          <el-col :span="12"><el-form-item label="操作时间"><el-date-picker v-model="logFilters.range" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD" style="width:100%"/></el-form-item></el-col>
+        </el-row>
+        <div class="filter-actions"><div></div><div class="filter-actions-right">
+          <el-button type="primary" :icon="Search" @click="logSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="logReset">重置</el-button>
+        </div></div>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="table-card">
+      <el-table :data="logPaged" border stripe style="width:100%">
+        <el-table-column type="index" label="序号" width="60" align="center" :index="i=>(logPag.page-1)*logPag.size+i+1" fixed></el-table-column>
+        <el-table-column prop="time" label="操作时间" min-width="160"></el-table-column>
+        <el-table-column label="操作类型" width="120" align="center"><template #default="{row}"><el-tag size="small" :type="LOG_TAG[row.type]||'info'" effect="plain">{{ row.type }}</el-tag></template></el-table-column>
+        <el-table-column prop="key" label="功能Key" min-width="180"><template #default="{row}"><span class="mono">{{ row.key }}</span></template></el-table-column>
+        <el-table-column label="修改前配置" min-width="200"><template #default="{row}"><div class="diff-box">{{ row.before||'—' }}</div></template></el-table-column>
+        <el-table-column label="修改后配置" min-width="200"><template #default="{row}"><div class="diff-box">{{ row.after||'—' }}</div></template></el-table-column>
+        <el-table-column prop="operator" label="操作人" width="90" align="center"></el-table-column>
+        <el-table-column prop="ip" label="操作IP" width="130"></el-table-column>
+      </el-table>
+      <div class="pagination-bar"><el-pagination v-model:current-page="logPag.page" v-model:page-size="logPag.size" :total="logFiltered.length" :page-sizes="[10,20,50,100]" layout="total, sizes, prev, pager, next, jumper" background/></div>
+    </el-card>
+  </template>
+</div>
+</template>
+
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/locale/zh-cn.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+<script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+const { createApp, ref, reactive, computed, defineComponent, watch, nextTick, onMounted } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const MODULES = ['首页','充值','活动','投注','个人中心','任务中心','代理','其他'];
+const STATUS_LIST = ['未生效','灰度中','已全量','已关闭','已归档'];
+const STATUS_TAG = { '未生效':'info', '灰度中':'warning', '已全量':'success', '已关闭':'danger', '已归档':'info' };
+const VIP_LEVELS = ['VIP0','VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10'];
+const MEMBER_TAGS = ['新用户','活跃用户','高价值用户','沉默用户','首充用户','代理用户','风险用户'];
+const LOG_TYPES = ['新建','编辑','推全量','关闭','回退灰度','重新开启','归档','恢复'];
+const LOG_TAG = { '新建':'primary','编辑':'info','推全量':'success','关闭':'danger','回退灰度':'warning','重新开启':'primary','归档':'info','恢复':'primary' };
+
+// 跨语言一致的稳定 hash（演示用，等价线上 CRC32/Murmur 的稳定性要求）
+function hashSlot(str){
+  let h = 2166136261 >>> 0;            // FNV-1a 32bit
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h % 100;                       // 0-99
+}
+
+const GrayRelease = defineComponent({
+  template:'#gray-release-tpl',
+  setup(){
+    // 视图由 URL hash 驱动（侧边栏二级菜单 → iframe#hash）
+    const TAB_HASH = ['list','sim','dash','log'];
+    const parseHash = ()=>{ const h=(location.hash||'').replace(/^#/,''); return TAB_HASH.includes(h)?h:'list'; };
+    const tab = ref(parseHash());
+    const grayConfigVersion = ref(130);
+    const bumpVersion = ()=>{ grayConfigVersion.value++; };
+    const now = '2026-06-23 17:20:00';
+    const operator = 'admin';
+    const ip = '203.0.113.18';
+
+    /* ───── 数据 ───── */
+    const mkRules = (o={})=>Object.assign({ whitelist:[], whitelistText:'', vip:[], tags:[], regType:'不限', regRange:[], percent:0 }, o);
+    const list = reactive([
+      { id:1, name:'新版充值页', key:'new_recharge_page', module:'充值', status:'灰度中',
+        rules:mkRules({ whitelist:['100001','100002'], whitelistText:'100001,100002', vip:['VIP3','VIP4','VIP5'], tags:['首充用户'], regType:'最近30天', percent:20 }),
+        mutex:true, group:'recharge_page', priority:1,
+        effectiveTime:'2026-06-22 00:00:00', endTime:'', desc:'充值页改版，先放量验证转化率', updateTime:'2026-06-22 12:00:00', operator:'admin' },
+      { id:2, name:'充值页 V3（多通道排序）', key:'recharge_page_v3', module:'充值', status:'灰度中',
+        rules:mkRules({ vip:['VIP5','VIP6'], tags:[], regType:'不限', percent:30 }),
+        mutex:true, group:'recharge_page', priority:2,
+        effectiveTime:'2026-06-22 00:00:00', endTime:'', desc:'与 V2 同属充值页互斥组', updateTime:'2026-06-22 13:10:00', operator:'admin' },
+      { id:3, name:'新版活动中心', key:'new_activity_center', module:'活动', status:'灰度中',
+        rules:mkRules({ tags:['活跃用户','高价值用户'], regType:'不限', percent:50 }),
+        mutex:false, group:'', priority:1,
+        effectiveTime:'2026-06-20 00:00:00', endTime:'', desc:'', updateTime:'2026-06-21 09:30:00', operator:'jamie' },
+      { id:4, name:'新版个人中心入口', key:'new_user_center', module:'个人中心', status:'已全量',
+        rules:mkRules({ percent:100 }),
+        mutex:false, group:'', priority:1,
+        effectiveTime:'2026-06-10 00:00:00', endTime:'', desc:'已验证稳定，推全量', updateTime:'2026-06-18 15:00:00', operator:'admin' },
+      { id:5, name:'新版投注确认弹窗', key:'new_bet_confirm_flow', module:'投注', status:'未生效',
+        rules:mkRules({ vip:['VIP1','VIP2','VIP3'], regType:'不限', percent:10 }),
+        mutex:false, group:'', priority:1,
+        effectiveTime:'2026-06-25 00:00:00', endTime:'', desc:'下周一生效', updateTime:'2026-06-23 10:00:00', operator:'jamie' },
+      { id:6, name:'新版首页入口（旧）', key:'new_home_entry_v1', module:'首页', status:'已关闭',
+        rules:mkRules({ percent:0 }),
+        mutex:false, group:'', priority:1,
+        effectiveTime:'2026-05-01 00:00:00', endTime:'', desc:'发现样式异常，已回滚', updateTime:'2026-05-12 18:20:00', operator:'admin' },
+      { id:7, name:'新版任务中心（试验）', key:'new_task_center_beta', module:'任务中心', status:'已归档',
+        rules:mkRules({ percent:0 }),
+        mutex:false, group:'', priority:1,
+        effectiveTime:'2026-03-01 00:00:00', endTime:'2026-04-01 00:00:00', desc:'试验结束，已归档', updateTime:'2026-04-02 10:00:00', operator:'jamie' },
+    ]);
+    let nextId = 100;
+
+    /* ───── 列表筛选 ───── */
+    const filters = reactive({ name:'', key:'', module:'', status:'', group:'', range:[] });
+    const applied = reactive({ name:'', key:'', module:'', status:'', group:'' });
+    const showArchived = ref(false);
+    const pag = reactive({ page:1, size:20 });
+    const filtered = computed(()=>list.filter(r=>
+      (showArchived.value || r.status!=='已归档') &&
+      (!applied.name || r.name.includes(applied.name)) &&
+      (!applied.key || r.key.includes(applied.key)) &&
+      (!applied.module || r.module===applied.module) &&
+      (!applied.status || r.status===applied.status) &&
+      (!applied.group || (r.group||'').includes(applied.group))
+    ));
+    const paged = computed(()=>{ const s=(pag.page-1)*pag.size; return filtered.value.slice(s,s+pag.size); });
+    const search = ()=>{ Object.assign(applied,filters); pag.page=1; ElMessage.success('查询条件已应用'); };
+    const reset = ()=>{ Object.assign(filters,{name:'',key:'',module:'',status:'',group:'',range:[]}); Object.assign(applied,{name:'',key:'',module:'',status:'',group:''}); pag.page=1; };
+
+    const regText = (rules)=> rules.regType==='自定义' ? ('注册 '+(rules.regRange&&rules.regRange.length?rules.regRange.join('~'):'区间')) : ('注册 '+rules.regType);
+    const canEdit = (row)=> ['未生效','灰度中'].includes(row.status);
+
+    /* ───── 新建 / 编辑 ───── */
+    const dlg = reactive({ visible:false, mode:'create', keyLocked:false, ref:null, form:null });
+    const blankForm = ()=>({ name:'', key:'', module:'', status:'灰度中', effectiveTime:'', endTime:'', desc:'', rules:mkRules(), mutex:false, group:'', priority:1 });
+    const openCreate = ()=>{ dlg.mode='create'; dlg.keyLocked=false; dlg.ref=null; dlg.form=blankForm(); dlg.visible=true; };
+    const openEdit = (row)=>{
+      dlg.mode='edit'; dlg.ref=row; dlg.keyLocked=['灰度中','已全量'].includes(row.status);
+      dlg.form = JSON.parse(JSON.stringify({ name:row.name, key:row.key, module:row.module, status:row.status==='未生效'?'未生效':'灰度中', effectiveTime:row.effectiveTime, endTime:row.endTime, desc:row.desc, rules:row.rules, mutex:row.mutex, group:row.group, priority:row.priority }));
+      dlg.visible=true;
+    };
+    const parseWhitelist = (txt)=> (txt||'').split(/[\s,，;；]+/).map(s=>s.trim()).filter(Boolean);
+    const submitForm = ()=>{
+      const f = dlg.form;
+      if(!f.name.trim()) return ElMessage.warning('请填写功能名称');
+      if(!f.key.trim()) return ElMessage.warning('请填写功能Key');
+      if(!f.module) return ElMessage.warning('请选择所属模块');
+      if(!f.effectiveTime) return ElMessage.warning('请选择生效时间');
+      // Key 唯一
+      const dup = list.find(r=>r.key===f.key.trim() && r!==dlg.ref);
+      if(dup) return ElMessage.error('功能Key 已存在，必须全局唯一');
+      // 互斥组同优先级校验
+      if(f.mutex){
+        if(!f.group.trim()) return ElMessage.warning('请填写互斥组');
+        const conflict = list.find(r=>r!==dlg.ref && r.mutex && r.group===f.group.trim() && r.priority===f.priority && r.status!=='已归档');
+        if(conflict) return ElMessage.error('互斥组「'+f.group+'」内已存在优先级 '+f.priority+'（'+conflict.key+'），禁止同组相同优先级');
+      }
+      f.rules.whitelist = parseWhitelist(f.rules.whitelistText);
+      if(dlg.mode==='create'){
+        list.unshift({ id:nextId++, name:f.name.trim(), key:f.key.trim(), module:f.module, status:f.status,
+          rules:JSON.parse(JSON.stringify(f.rules)), mutex:f.mutex, group:f.mutex?f.group.trim():'', priority:f.priority,
+          effectiveTime:f.effectiveTime, endTime:f.endTime, desc:f.desc, updateTime:now, operator });
+        pushLog('新建', f.key.trim(), '', summarize(f));
+        ElMessage.success('创建成功');
+      } else {
+        const before = summarize(dlg.ref);
+        Object.assign(dlg.ref, { name:f.name.trim(), key:f.key.trim(), module:f.module, rules:JSON.parse(JSON.stringify(f.rules)), mutex:f.mutex, group:f.mutex?f.group.trim():'', priority:f.priority, effectiveTime:f.effectiveTime, endTime:f.endTime, desc:f.desc, updateTime:now, operator });
+        pushLog('编辑', dlg.ref.key, before, summarize(dlg.ref));
+        ElMessage.success('已保存');
+      }
+      bumpVersion();
+      dlg.visible=false;
+    };
+
+    /* ───── 状态机操作 ───── */
+    const confirmThen = (msg, title, type='warning')=> ElMessageBox.confirm(msg, title, { type, confirmButtonText:'确定', cancelButtonText:'取消' });
+    const changeStatus = (row, to, typeLabel, msg)=>{
+      confirmThen(msg, typeLabel).then(()=>{
+        const before = '状态：'+row.status;
+        row.status = to; row.updateTime = now; row.operator = operator;
+        pushLog(typeLabel, row.key, before, '状态：'+to);
+        bumpVersion();
+        ElMessage.success(typeLabel+'成功，grayConfigVersion → '+grayConfigVersion.value);
+      }).catch(()=>{});
+    };
+    const toFull = (row)=> changeStatus(row,'已全量','推全量','推全量后该功能将对【全部会员】开放、不再判断投放规则。确认推全量？');
+    const toClosed = (row)=> changeStatus(row,'已关闭', row.status==='未生效'?'取消':'关闭', '关闭后全部会员恢复旧版（不删除灰度期间已产生的正式数据）。确认'+(row.status==='未生效'?'取消':'关闭')+'？');
+    const rollbackToGray = (row)=> changeStatus(row,'灰度中','回退灰度','已全量回退到灰度中，将重新按投放规则判断命中。确认回退？');
+    const reopen = (row)=> changeStatus(row,'灰度中','重新开启','重新开启后按投放规则恢复灰度。确认重新开启？');
+    const archive = (row)=> changeStatus(row,'已归档','归档','归档后不再参与灰度判断（历史数据与日志保留）。确认归档？');
+    const restore = (row)=> changeStatus(row,'已关闭','恢复','恢复后状态变为已关闭，可再重新开启。确认恢复？');
+
+    /* ───── 投放规则摘要文本 ───── */
+    const summarize = (f)=>{
+      const r = f.rules; const p=[];
+      if((f.rules.whitelist&&f.rules.whitelist.length)||(f.rules.whitelistText&&parseWhitelist(f.rules.whitelistText).length)) p.push('白名单'+((f.rules.whitelist&&f.rules.whitelist.length)||parseWhitelist(f.rules.whitelistText).length)+'人');
+      if(r.vip&&r.vip.length) p.push('VIP['+r.vip.join('/')+']');
+      if(r.tags&&r.tags.length) p.push('标签['+r.tags.join('/')+']');
+      if(r.regType&&r.regType!=='不限') p.push('注册'+r.regType);
+      p.push('放量'+r.percent+'%');
+      if(f.mutex) p.push('互斥组'+f.group+'(优先级'+f.priority+')');
+      return p.join('，');
+    };
+
+    /* ───── 操作日志 ───── */
+    const logs = reactive([
+      { time:'2026-06-22 13:10:00', type:'编辑', key:'recharge_page_v3', before:'放量20%', after:'放量30%', operator:'admin', ip:'203.0.113.18' },
+      { time:'2026-06-22 12:00:00', type:'新建', key:'new_recharge_page', before:'', after:'白名单2人，VIP[VIP3/VIP4/VIP5]，注册最近30天，放量20%，互斥组recharge_page(优先级1)', operator:'admin', ip:'203.0.113.18' },
+      { time:'2026-06-18 15:00:00', type:'推全量', key:'new_user_center', before:'状态：灰度中', after:'状态：已全量', operator:'admin', ip:'203.0.113.18' },
+      { time:'2026-05-12 18:20:00', type:'关闭', key:'new_home_entry_v1', before:'状态：灰度中', after:'状态：已关闭', operator:'admin', ip:'198.51.100.7' },
+      { time:'2026-04-02 10:00:00', type:'归档', key:'new_task_center_beta', before:'状态：已关闭', after:'状态：已归档', operator:'jamie', ip:'198.51.100.7' },
+    ]);
+    const pushLog = (type, key, before, after)=> logs.unshift({ time:now, type, key, before, after, operator, ip });
+    const logFilters = reactive({ key:'', type:'', operator:'', range:[] });
+    const logApplied = reactive({ key:'', type:'', operator:'' });
+    const logPag = reactive({ page:1, size:20 });
+    const logFiltered = computed(()=>logs.filter(r=>
+      (!logApplied.key || r.key.includes(logApplied.key)) &&
+      (!logApplied.type || r.type===logApplied.type) &&
+      (!logApplied.operator || r.operator.includes(logApplied.operator))
+    ));
+    const logPaged = computed(()=>{ const s=(logPag.page-1)*logPag.size; return logFiltered.value.slice(s,s+logPag.size); });
+    const logSearch = ()=>{ Object.assign(logApplied,logFilters); logPag.page=1; ElMessage.success('查询条件已应用'); };
+    const logReset = ()=>{ Object.assign(logFilters,{key:'',type:'',operator:'',range:[]}); Object.assign(logApplied,{key:'',type:'',operator:''}); logPag.page=1; };
+    const openLog = (row)=>{ tab.value='log'; Object.assign(logFilters,{key:row.key,type:'',operator:'',range:[]}); Object.assign(logApplied,{key:row.key,type:'',operator:''}); logPag.page=1; };
+
+    /* ───── 命中测试器 ───── */
+    const sim = reactive({ memberId:'100001', vip:'VIP3', regDays:15, tags:['首充用户'] });
+    const simResult = ref(null);
+    const resetSim = ()=>{ Object.assign(sim,{ memberId:'100001', vip:'VIP3', regDays:15, tags:['首充用户'] }); simResult.value=null; };
+    const vipNum = (v)=> Number(String(v).replace('VIP',''))||0;
+    const runSim = ()=>{
+      if(!sim.memberId.trim()) return ElMessage.warning('请填写会员ID');
+      const detail = [];
+      for(const fe of list){
+        const d = { key:fe.key, status:fe.status, hit:false, way:'', slot:null, reason:'', mutexLose:false, group:fe.group, priority:fe.priority, mutex:fe.mutex };
+        // 1. 状态
+        if(['已关闭','已归档','未生效'].includes(fe.status)){ d.reason = fe.status+'：全部不命中'; detail.push(d); continue; }
+        if(fe.status==='已全量'){ d.hit=true; d.way='全量'; d.reason='已全量：全部会员命中'; detail.push(d); continue; }
+        // 2. 白名单
+        if(fe.rules.whitelist.includes(sim.memberId.trim())){ d.hit=true; d.way='白名单'; d.reason='命中白名单，跳过普通规则'; detail.push(d); continue; }
+        // 3. 硬条件 AND
+        const fails = [];
+        if(fe.rules.vip.length && !fe.rules.vip.includes(sim.vip)) fails.push('VIP不满足('+fe.rules.vip.join('/')+')');
+        if(fe.rules.tags.length && !fe.rules.tags.some(t=>sim.tags.includes(t))) fails.push('标签不满足('+fe.rules.tags.join('/')+')');
+        if(fe.rules.regType==='最近7天' && sim.regDays>7) fails.push('注册超过7天');
+        if(fe.rules.regType==='最近30天' && sim.regDays>30) fails.push('注册超过30天');
+        if(fails.length){ d.reason='硬条件未准入：'+fails.join('、'); detail.push(d); continue; }
+        // 4. 百分比放量
+        const slot = hashSlot(sim.memberId.trim()+'_'+fe.key);
+        d.slot = slot;
+        if(slot < fe.rules.percent){ d.hit=true; d.way='普通规则'; d.reason='硬条件通过；slot '+slot+' < 放量'+fe.rules.percent+'% → 命中'; }
+        else { d.reason='硬条件通过；slot '+slot+' ≥ 放量'+fe.rules.percent+'% → 未命中'; }
+        detail.push(d);
+      }
+      // 5. 互斥裁决：组内 白名单命中 > 普通命中；同层取 priority 最大
+      const groups = {};
+      detail.filter(d=>d.hit && d.mutex).forEach(d=>{ (groups[d.group]=groups[d.group]||[]).push(d); });
+      Object.values(groups).forEach(arr=>{
+        const wl = arr.filter(d=>d.way==='白名单');
+        const pool = wl.length ? wl : arr;
+        const winner = pool.reduce((a,b)=> b.priority>a.priority ? b : a);
+        arr.forEach(d=>{ if(d!==winner) d.mutexLose=true; });
+      });
+      const finalKeys = detail.filter(d=>d.hit && !d.mutexLose).map(d=>d.key);
+      simResult.value = { detail, finalKeys };
+      ElMessage.success('已计算，命中 '+finalKeys.length+' 个功能');
+    };
+
+    /* ───── 数据看板（灰度组 vs 对照组）───── */
+    // 各灰度功能的对比指标（g=灰度组，c=对照组）；对照组为同质会员（满足硬条件但未落入放量%）
+    const DASH_DATA = {
+      new_recharge_page: { // 转化偏低 + 异常偏高 → 建议回退（对应排查场景）
+        sampleG:8420, sampleC:33680,
+        firstDeposit:{g:18.2,c:21.5}, d1:{g:41.0,c:43.5}, d7:{g:22.1,c:24.8},
+        arpu:{g:312,c:358}, withdrawOk:{g:96.5,c:97.1}, complaint:{g:2.8,c:1.6}, error:{g:1.9,c:0.4},
+        retention:{ g:[41,33,29,26,24,23,22.1], c:[43.5,36,32,29,27,25.5,24.8] },
+        funnel:[ {n:'注册',v:100}, {n:'登录',v:88}, {n:'首充',v:18.2}, {n:'复充',v:7.1} ] },
+      recharge_page_v3: { // 表现良好
+        sampleG:12600, sampleC:29400,
+        firstDeposit:{g:24.8,c:21.0}, d1:{g:46.2,c:43.0}, d7:{g:27.5,c:24.0},
+        arpu:{g:395,c:360}, withdrawOk:{g:97.4,c:97.0}, complaint:{g:1.4,c:1.6}, error:{g:0.5,c:0.6},
+        retention:{ g:[46.2,39,34,31,29,28,27.5], c:[43,36,32,29,27,25,24] },
+        funnel:[ {n:'注册',v:100}, {n:'登录',v:91}, {n:'首充',v:24.8}, {n:'复充',v:11.2} ] },
+      new_activity_center: { // 明显提升 → 建议推全量
+        sampleG:21000, sampleC:21000,
+        firstDeposit:{g:26.4,c:21.0}, d1:{g:48.0,c:43.0}, d7:{g:29.0,c:24.0},
+        arpu:{g:402,c:360}, withdrawOk:{g:97.2,c:97.0}, complaint:{g:1.2,c:1.5}, error:{g:0.3,c:0.4},
+        retention:{ g:[48,41,36,33,31,30,29], c:[43,36,32,29,27,25,24] },
+        funnel:[ {n:'注册',v:100}, {n:'登录',v:92}, {n:'首充',v:26.4}, {n:'复充',v:12.8} ] },
+      new_user_center: { // 已全量，历史对比良好
+        sampleG:50000, sampleC:18000,
+        firstDeposit:{g:22.6,c:21.2}, d1:{g:44.5,c:43.2}, d7:{g:25.6,c:24.4},
+        arpu:{g:372,c:358}, withdrawOk:{g:97.3,c:97.0}, complaint:{g:1.5,c:1.6}, error:{g:0.4,c:0.5},
+        retention:{ g:[44.5,37,33,30,28,26,25.6], c:[43.2,36,32,29,27,25,24.4] },
+        funnel:[ {n:'注册',v:100}, {n:'登录',v:90}, {n:'首充',v:22.6}, {n:'复充',v:9.8} ] },
+      new_home_entry_v1: { // 已关闭，当初指标变差（解释为何回滚）
+        sampleG:6200, sampleC:24800,
+        firstDeposit:{g:16.0,c:20.8}, d1:{g:38.0,c:43.0}, d7:{g:19.5,c:24.2},
+        arpu:{g:288,c:352}, withdrawOk:{g:95.8,c:97.0}, complaint:{g:3.5,c:1.6}, error:{g:2.6,c:0.5},
+        retention:{ g:[38,30,26,23,21,20,19.5], c:[43,36,32,29,27,25,24.2] },
+        funnel:[ {n:'注册',v:100}, {n:'登录',v:85}, {n:'首充',v:16.0}, {n:'复充',v:5.4} ] },
+    };
+    const dashOptions = computed(()=> list.filter(r=>DASH_DATA[r.key]).map(r=>({ key:r.key, name:r.name })));
+    const dash = reactive({ featureKey:'new_recharge_page', range:[] });
+    const dashData = computed(()=> DASH_DATA[dash.featureKey]);
+
+    const lift = (m)=> ((m.g-m.c)/m.c*100);
+    const fmtLift = (v)=> (v>=0?'+':'')+v.toFixed(1)+'%';
+    const metrics = computed(()=>{
+      const d = dashData.value; if(!d) return [];
+      const pct = (m,lower)=>{ const l=lift(m); return { gText:m.g.toFixed(1), cText:m.c.toFixed(1), unit:'%', showLift:true, liftText:fmtLift(l), good: lower? l<0 : l>0, cls:(lower? l<0 : l>0)?'good':(Math.abs(l)<0.5?'flat':'bad') }; };
+      return [
+        { label:'样本会员数', gText:d.sampleG.toLocaleString(), cText:d.sampleC.toLocaleString(), unit:'人', showLift:false, cls:'flat' },
+        Object.assign({label:'首充转化率'}, pct(d.firstDeposit,false)),
+        Object.assign({label:'次日留存 D1'}, pct(d.d1,false)),
+        Object.assign({label:'7日留存 D7'}, pct(d.d7,false)),
+        (()=>{ const l=lift(d.arpu); return {label:'人均充值 ARPU', gText:'₹'+d.arpu.g, cText:'₹'+d.arpu.c, unit:'', showLift:true, liftText:fmtLift(l), good:l>0, cls:l>0?'good':'bad'}; })(),
+        Object.assign({label:'提现成功率'}, pct(d.withdrawOk,false)),
+        Object.assign({label:'客诉率'}, pct(d.complaint,true)),
+        Object.assign({label:'异常/报错率'}, pct(d.error,true)),
+      ];
+    });
+    const rec = computed(()=>{
+      const d = dashData.value; if(!d) return {};
+      const fl = lift(d.firstDeposit), d7l = lift(d.d7);
+      const errWorse = d.error.g > d.error.c*1.5;
+      const compWorse = d.complaint.g > d.complaint.c*1.3;
+      if(errWorse || fl < -3){
+        return { type:'error', title:'建议：回退 / 关闭新版', desc:`灰度组首充转化 ${fmtLift(fl)}、异常率 ${d.error.g}%（对照 ${d.error.c}%）`+(errWorse?'，异常显著升高':'')+(compWorse?'，客诉升高':'')+`。新版转化与质量均不达预期，建议回退灰度或直接关闭。注：关闭仅停展示，历史账号与订单按 source_feature_key 保留可用、可对账。` };
+      }
+      if(fl >= 5 && d7l >= -2 && !compWorse){
+        return { type:'success', title:'建议：可推全量', desc:`灰度组首充转化 ${fmtLift(fl)}、D7 留存 ${fmtLift(d7l)}、ARPU ${fmtLift(lift(d.arpu))}，质量指标未恶化。新版优于旧版，可逐步推全量。` };
+      }
+      return { type:'warning', title:'建议：继续观察', desc:`灰度组首充转化 ${fmtLift(fl)}、D7 留存 ${fmtLift(d7l)}，提升不显著或样本不足。建议维持当前放量、扩大样本后再决策。` };
+    });
+
+    let chartBar, chartLine, chartFunnel;
+    const renderDash = ()=> nextTick(()=>{
+      const d = dashData.value; if(!d) return;
+      const C_G='#409eff', C_C='#c0c4cc';
+      const eBar=document.getElementById('dashBar');
+      const eLine=document.getElementById('dashLine');
+      const eFun=document.getElementById('dashFunnel');
+      if(!eBar||!eLine||!eFun) return;
+      chartBar && chartBar.dispose(); chartLine && chartLine.dispose(); chartFunnel && chartFunnel.dispose();
+      chartBar = echarts.init(eBar);
+      chartBar.setOption({
+        title:{ text:'关键指标对比（%）', left:'center', textStyle:{fontSize:13,color:'#1f2937'} },
+        tooltip:{ trigger:'axis' }, legend:{ bottom:0, data:['灰度组','对照组'] },
+        grid:{ top:40, left:40, right:16, bottom:40 },
+        xAxis:{ type:'category', data:['首充转化','D1留存','D7留存','提现成功'] },
+        yAxis:{ type:'value' },
+        series:[
+          { name:'灰度组', type:'bar', color:C_G, label:{show:true,position:'top',fontSize:10,formatter:'{c}'}, data:[d.firstDeposit.g,d.d1.g,d.d7.g,d.withdrawOk.g] },
+          { name:'对照组', type:'bar', color:C_C, label:{show:true,position:'top',fontSize:10,formatter:'{c}'}, data:[d.firstDeposit.c,d.d1.c,d.d7.c,d.withdrawOk.c] },
+        ],
+      });
+      chartLine = echarts.init(eLine);
+      chartLine.setOption({
+        title:{ text:'留存曲线 D1–D7（%）', left:'center', textStyle:{fontSize:13,color:'#1f2937'} },
+        tooltip:{ trigger:'axis' }, legend:{ bottom:0, data:['灰度组','对照组'] },
+        grid:{ top:40, left:40, right:16, bottom:40 },
+        xAxis:{ type:'category', boundaryGap:false, data:['D1','D2','D3','D4','D5','D6','D7'] },
+        yAxis:{ type:'value' },
+        series:[
+          { name:'灰度组', type:'line', smooth:true, color:C_G, areaStyle:{opacity:0.08}, data:d.retention.g },
+          { name:'对照组', type:'line', smooth:true, color:C_C, lineStyle:{type:'dashed'}, data:d.retention.c },
+        ],
+      });
+      chartFunnel = echarts.init(eFun);
+      chartFunnel.setOption({
+        title:{ text:'灰度组转化漏斗（注册→登录→首充→复充，%）', left:'center', textStyle:{fontSize:13,color:'#1f2937'} },
+        tooltip:{ trigger:'item', formatter:'{b}: {c}%' },
+        series:[{ type:'funnel', top:46, bottom:16, left:'10%', width:'80%', minSize:'20%', label:{formatter:'{b}  {c}%'},
+          data:d.funnel.map(f=>({ name:f.n, value:f.v })) }],
+      });
+    });
+
+    // hash 变化时切换视图；进入数据看板时渲染图表
+    const applyHash = ()=>{ tab.value = parseHash(); };
+    window.addEventListener('hashchange', applyHash);
+    window.addEventListener('resize', ()=>{ chartBar&&chartBar.resize(); chartLine&&chartLine.resize(); chartFunnel&&chartFunnel.resize(); });
+    watch(tab, (v)=>{ if(v==='dash') renderDash(); });
+    onMounted(()=>{ if(tab.value==='dash') renderDash(); });
+
+    const icons = ElementPlusIconsVue;
+    return { tab, grayConfigVersion,
+      MODULES, STATUS_LIST, STATUS_TAG, VIP_LEVELS, MEMBER_TAGS, LOG_TYPES, LOG_TAG,
+      filters, showArchived, pag, filtered, paged, search, reset, regText, canEdit,
+      dlg, openCreate, openEdit, submitForm,
+      toFull, toClosed, rollbackToGray, reopen, archive, restore,
+      logFilters, logPag, logFiltered, logPaged, logSearch, logReset, openLog,
+      sim, simResult, runSim, resetSim,
+      dash, dashOptions, dashData, metrics, rec, renderDash,
+      ElMessage, Search:icons.Search, Refresh:icons.Refresh, Plus:icons.Plus };
+  }
+});
+
+const app = createApp({ components:{ 'gray-release': GrayRelease } });
+for(const [k,c] of Object.entries(ElementPlusIconsVue)) app.component(k,c);
+app.use(ElementPlus, { locale:(window.ElementPlusLocaleZhCn||undefined) });
+app.mount('#app');
+</script>
+</body>
+</html>

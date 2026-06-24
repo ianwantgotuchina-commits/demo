@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>稽核管理 - Audit Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f9fafb;
+        }
+
+        /* 表格滚动容器样式 */
+        .table-container {
+            overflow-x: auto;
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Sticky定位优化 */
+        .sticky-left {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: rgb(249 250 251);
+            box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+        }
+
+        .sticky-right {
+            position: sticky;
+            right: 0;
+            z-index: 10;
+            background-color: rgb(249 250 251);
+            box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: rgb(249 250 251);
+        }
+
+        .sticky-corner {
+            z-index: 20;
+        }
+
+        /* 对话框样式 */
+        .dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .dialog-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 树形结构样式 */
+        .tree-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Select样式优化 */
+        select {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="p-6 bg-gray-50 min-h-screen">
+        <!-- 筛选条件区 -->
+        <div class="bg-white rounded-lg shadow-sm mb-6">
+            <div class="px-6 py-4">
+                <div class="space-y-4">
+                    <!-- 第一行 - 账号信息、状态和交易类型 -->
+                    <div class="flex items-center gap-6">
+                        <!-- 账号信息 -->
+                        <div class="flex items-center gap-3">
+                            <select id="accountInfoType" class="w-28 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                                <option value="memberId">会员ID</option>
+                                <option value="username">用户名</option>
+                                <option value="phone">手机号</option>
+                            </select>
+                            <input id="accountInfo" type="text" placeholder="请输入" class="w-48 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                        </div>
+
+                        <!-- 状态 -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-700">状态</span>
+                            <select id="status" class="w-48 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                                <option value="all">全部</option>
+                                <option value="notStarted">未开始</option>
+                                <option value="inProgress">进行中</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                        </div>
+
+                        <!-- 交易类型 -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-700">交易类型</span>
+                            <select id="transactionType" class="w-48 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                                <option value="all">全部</option>
+                                <option value="存款">存款</option>
+                                <option value="活动">活动</option>
+                                <option value="调账">调账</option>
+                                <option value="奖金">奖金</option>
+                                <option value="注册">注册</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 第二行 - 时间选择 -->
+                    <div class="flex items-center gap-6">
+                        <!-- 创建时间 -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-700">创建时间</span>
+                            <div class="flex items-center gap-2">
+                                <input id="createStartDate" type="date" value="2026-02-05" class="w-40 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                                <span class="text-sm text-gray-600">至</span>
+                                <input id="createEndDate" type="date" value="2026-02-05" class="w-40 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                            </div>
+                        </div>
+
+                        <!-- 更新时间 -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-700">更新时间</span>
+                            <div class="flex items-center gap-2">
+                                <input id="updateStartDate" type="date" class="w-40 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                                <span class="text-sm text-gray-600">至</span>
+                                <input id="updateEndDate" type="date" class="w-40 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第三行 - 操作按钮 -->
+                    <div class="flex items-center gap-3">
+                        <button onclick="handleSearch()" class="h-9 px-5 border border-blue-400 text-blue-600 rounded hover:bg-blue-50 transition-colors">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                查询
+                            </span>
+                        </button>
+                        <button onclick="handleReset()" class="h-9 px-5 border border-green-400 text-green-600 rounded hover:bg-green-50 transition-colors">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                重置
+                            </span>
+                        </button>
+                        <button onclick="openAddDialog()" class="h-9 px-5 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                新增
+                            </span>
+                        </button>
+                        <button onclick="openGlobalSettingsDialog()" class="h-9 px-5 border border-purple-400 text-purple-600 rounded hover:bg-purple-50 transition-colors">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                稽核全局设置
+                            </span>
+                        </button>
+                        <button class="h-9 px-5 border border-orange-400 text-orange-600 rounded hover:bg-orange-50 transition-colors">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                表头显示设置
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="bg-white rounded-lg shadow-sm">
+            <div class="table-container">
+                <table class="w-full border-collapse min-w-[2400px]">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="sticky-left sticky-top sticky-corner px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-100">用户名</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">交易类型</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">名称</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">币种</th>
+                            <th class="sticky-top px-4 py-3 text-right text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">交易金额</th>
+                            <th class="sticky-top px-4 py-3 text-center text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">稽核倍数</th>
+                            <th class="sticky-top px-4 py-3 text-right text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">稽核金额</th>
+                            <th class="sticky-top px-4 py-3 text-right text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">已稽核</th>
+                            <th class="sticky-top px-4 py-3 text-right text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">未稽核</th>
+                            <th class="sticky-top px-4 py-3 text-right text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">稽核调整</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">备注</th>
+                            <th class="sticky-top px-4 py-3 text-center text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">状态</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">解除设置</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">操作人</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">操作内容</th>
+                            <th class="sticky-top px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap border-r bg-gray-50">创建/更新时间</th>
+                            <th class="sticky-right sticky-top sticky-corner px-4 py-3 text-center text-sm font-medium text-gray-700 whitespace-nowrap bg-gray-100">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <!-- 表格数据由JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页控件 -->
+            <div class="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span>共 <span id="totalCount">0</span> 条</span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <select class="w-[120px] h-8 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                            <option value="10">10条/页</option>
+                            <option value="20">20条/页</option>
+                            <option value="50">50条/页</option>
+                            <option value="100">100条/页</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button disabled class="h-8 w-8 p-0 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">&lt;</button>
+                        <button class="h-8 w-8 p-0 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">1</button>
+                        <button class="h-8 w-8 p-0 border border-gray-300 rounded text-sm hover:bg-gray-50">&gt;</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        <span>前往</span>
+                        <input type="number" value="1" class="w-16 h-8 px-2 text-center text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500" />
+                        <span>页</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增稽核弹窗 -->
+    <div id="addDialog" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-xl font-semibold">新增稽核信息</h2>
+                <p class="text-sm text-gray-500 mt-1">请填写以下信息以新增稽核记录</p>
+            </div>
+            
+            <div class="px-6 py-4 space-y-4">
+                <!-- 账号信息搜索 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">账号信息</label>
+                    <div class="flex gap-2 flex-1">
+                        <input id="addAccountInfo" type="text" placeholder="会员ID或账号信息" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                        <button onclick="searchUserInfo()" class="h-9 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap">搜索</button>
+                    </div>
+                </div>
+
+                <!-- 用户信息显示 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">用户信息</label>
+                    <div class="flex gap-4 flex-1">
+                        <div class="flex items-center gap-2 flex-1">
+                            <span class="text-sm text-gray-600 whitespace-nowrap">余额</span>
+                            <input id="userBalance" readonly placeholder="-" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm bg-gray-50" />
+                        </div>
+                        <div class="flex items-center gap-2 flex-1">
+                            <span class="text-sm text-gray-600 whitespace-nowrap">剩余打码</span>
+                            <input id="userWager" readonly placeholder="-" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm bg-gray-50" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交易类型 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">交易类型</label>
+                    <select id="addTransactionType" onchange="handleTransactionTypeChange()" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">请选择交易类型</option>
+                        <option value="deposit">存款</option>
+                        <option value="activity">活动</option>
+                        <option value="adjustment">调账</option>
+                        <option value="bonus">奖金</option>
+                        <option value="register">注册</option>
+                    </select>
+                </div>
+
+                <!-- 活动名称 -->
+                <div id="activityNameSection" class="hidden flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">名称</label>
+                    <select id="addActivityName" onchange="handleActivityNameChange()" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">请选择活动名称</option>
+                    </select>
+                </div>
+
+                <!-- 自定义活动名称 -->
+                <div id="customActivityNameSection" class="hidden flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">自定义名称</label>
+                    <input id="customActivityName" type="text" placeholder="请输入自定义活动名称" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <!-- 交易金额 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">交易金额</label>
+                    <input id="transactionAmount" type="number" placeholder="请输入交易金额" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <!-- 稽核方式 -->
+                <div class="flex items-start gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm pt-2">稽核方式</label>
+                    <div class="flex-1 space-y-3">
+                        <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="auditMethod" value="amount" checked onchange="handleAuditMethodChange()" class="w-4 h-4" />
+                                <span class="text-sm">金额稽核</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="auditMethod" value="multiplier" onchange="handleAuditMethodChange()" class="w-4 h-4" />
+                                <span class="text-sm">倍数稽核</span>
+                            </label>
+                        </div>
+                        <input id="auditValue" type="number" placeholder="请输入稽核金额" class="w-full h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                </div>
+
+                <!-- 稽核解除设置 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">稽核解除设置</label>
+                    <div class="flex items-center gap-6 flex-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="autoRelease" value="yes" checked onchange="handleAutoReleaseChange()" class="w-4 h-4" />
+                            <span class="text-sm">输光自动解除</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="autoRelease" value="no" onchange="handleAutoReleaseChange()" class="w-4 h-4" />
+                            <span class="text-sm">输光不自动解除</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 稽核自动解除额度 -->
+                <div id="autoReleaseAmountSection" class="pl-36">
+                    <div class="flex items-center gap-4">
+                        <label class="w-36 text-right shrink-0 text-sm">稽核自动解除额度</label>
+                        <input id="autoReleaseAmount" type="number" placeholder="请输入稽核自动解除额度" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                    <div class="flex items-start gap-4 mt-2">
+                        <div class="w-36"></div>
+                        <p class="text-xs text-red-600 flex-1">重要说明 当玩家总余额低于以上金额时(包含余额宝)，该玩家被视为亏光</p>
+                    </div>
+                </div>
+
+                <!-- 解除方式 -->
+                <div id="releaseModeSection" class="pl-36">
+                    <div class="flex items-center gap-4">
+                        <label class="w-36 text-right shrink-0 text-sm">解除方式</label>
+                        <div class="flex items-center gap-6 flex-1">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="releaseMode" value="deposit" onchange="handleReleaseModeChange()" class="w-4 h-4" />
+                                <span class="text-sm">充值后解除</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="releaseMode" value="immediate" checked onchange="handleReleaseModeChange()" class="w-4 h-4" />
+                                <span class="text-sm">立刻解除</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="depositTip" class="hidden flex items-start gap-4 mt-2">
+                        <div class="w-36"></div>
+                        <p class="text-xs text-red-600 flex-1">充值任意金额解除</p>
+                    </div>
+                </div>
+
+                <!-- 备注 -->
+                <div class="flex items-start gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm pt-2">备注</label>
+                    <textarea id="addRemark" placeholder="请输入备注信息" class="flex-1 min-h-[80px] px-3 py-2 border border-gray-300 rounded text-sm resize-none focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeAddDialog()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">取消</button>
+                <button onclick="submitAdd()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div id="detailDialog" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-xl font-semibold">稽核记录详情</h2>
+                <p class="text-sm text-gray-500 mt-1">查看完整的稽核记录信息</p>
+            </div>
+            
+            <div id="detailContent" class="px-6 py-4 space-y-4">
+                <!-- 详情内容由JavaScript动态生成 -->
+            </div>
+
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end">
+                <button onclick="closeDetailDialog()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 调整弹窗 -->
+    <div id="adjustDialog" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-xl font-semibold">稽核调整</h2>
+                <p class="text-sm text-gray-500 mt-1">调整用户的稽核金额，请谨慎操作</p>
+            </div>
+            
+            <div id="adjustContent" class="px-6 py-4 space-y-6">
+                <!-- 调整内容由JavaScript动态生成 -->
+            </div>
+
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeAdjustDialog()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">取消</button>
+                <button onclick="submitAdjust()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局设置弹窗 -->
+    <div id="globalSettingsDialog" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-xl font-semibold">稽核全局设置</h2>
+                <p class="text-sm text-gray-500 mt-1">设置全局默认的稽核解除规则</p>
+            </div>
+            
+            <div class="px-6 py-4 space-y-6">
+                <!-- 全局设置内容 -->
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">稽核解除设置</label>
+                    <div class="flex items-center gap-6 flex-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalAutoRelease" value="yes" checked class="w-4 h-4" />
+                            <span class="text-sm">输光自动解除</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalAutoRelease" value="no" class="w-4 h-4" />
+                            <span class="text-sm">输光不自动解除</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pl-36">
+                    <div class="flex items-center gap-4">
+                        <label class="w-36 text-right shrink-0 text-sm">稽核自动解除额度</label>
+                        <input type="number" value="100" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                </div>
+
+                <div class="pl-36 flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">解除方式</label>
+                    <div class="flex items-center gap-6 flex-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalReleaseMode" value="deposit" checked class="w-4 h-4" />
+                            <span class="text-sm">充值后解除</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalReleaseMode" value="immediate" class="w-4 h-4" />
+                            <span class="text-sm">立刻解除</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-right shrink-0 text-sm">稽核限定平台</label>
+                    <div class="flex items-center gap-6 flex-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalPlatformLimit" value="unlimited" checked class="w-4 h-4" />
+                            <span class="text-sm">不限制</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalPlatformLimit" value="limited" class="w-4 h-4" />
+                            <span class="text-sm">仅限以下平台</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="globalPlatformLimit" value="exclude" class="w-4 h-4" />
+                            <span class="text-sm">排除以下平台</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeGlobalSettingsDialog()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">取消</button>
+                <button onclick="saveGlobalSettings()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 示例数据
+        const auditRecords = [
+            {
+                id: 1, memberId: '2013206764355186690', username: 'user001', transactionType: '活动', activityName: '投注返水',
+                currency: 'INR', transactionAmount: '1,000.00', auditMultiplier: 3, auditAmount: '3,000.00',
+                completedAudit: '0.00', remainingAudit: '3,000.00', auditAdjustment: '0.00', remark: '首次参与返水活动',
+                status: '未开始', releaseSettings: '输光自动解除 | 额度立刻解除', operator: '系统', operationType: 'create',
+                adjustmentDetail: null, createTime: '2026-02-05 10:30:15', updateTime: '2026-02-05 10:30:15',
+                orderNo: 'AUD20260205103015001', vipLevel: 'VIP3', accountBalance: '8,520.00', ipAddress: '192.168.1.100',
+                deviceInfo: 'Chrome 120 / Windows 10', auditProgress: 0
+            },
+            {
+                id: 2, memberId: '2013206764355186691', username: 'user002', transactionType: '存款', activityName: '首充活动',
+                currency: 'INR', transactionAmount: '5,000.00', auditMultiplier: 5, auditAmount: '25,000.00',
+                completedAudit: '12,500.00', remainingAudit: '12,500.00', auditAdjustment: '0.00', remark: '首充用户奖励',
+                status: '进行中', releaseSettings: '输光自动解除 | 充值后结束', operator: 'admin001', operationType: 'create',
+                adjustmentDetail: null, createTime: '2026-02-04 14:20:30', updateTime: '2026-02-05 09:15:42',
+                orderNo: 'AUD20260204142030002', vipLevel: 'VIP5', accountBalance: '15,230.50', ipAddress: '192.168.1.101',
+                deviceInfo: 'Safari 17 / iOS 17', auditProgress: 50
+            },
+            {
+                id: 3, memberId: '2013206764355186692', username: 'user003', transactionType: '活动', activityName: '每日签到',
+                currency: 'INR', transactionAmount: '500.00', auditMultiplier: 1, auditAmount: '500.00',
+                completedAudit: '500.00', remainingAudit: '0.00', auditAdjustment: '0.00', remark: '连续签到7天奖励',
+                status: '已完成', releaseSettings: '输光自动解除 | 额度立刻解除', operator: '系统', operationType: 'create',
+                adjustmentDetail: null, createTime: '2026-02-03 08:00:00', updateTime: '2026-02-04 18:25:10',
+                orderNo: 'AUD20260203080000003', vipLevel: 'VIP2', accountBalance: '2,100.00', ipAddress: '192.168.1.102',
+                deviceInfo: 'Chrome 120 / Android 13', auditProgress: 100
+            },
+            {
+                id: 4, memberId: '2013206764355186693', username: 'user004', transactionType: '奖金', activityName: 'VIP奖金',
+                currency: 'INR', transactionAmount: '10,000.00', auditMultiplier: 8, auditAmount: '80,000.00',
+                completedAudit: '35,200.00', remainingAudit: '44,800.00', auditAdjustment: '-5,000.00', remark: 'VIP5升级奖励，人工调整减少5000稽核',
+                status: '进行中', releaseSettings: '输光不自动解除', operator: 'admin002', operationType: 'adjust',
+                adjustmentDetail: '稽核金额调整：减少5,000.00', createTime: '2026-02-01 16:45:20', updateTime: '2026-02-05 11:30:00',
+                orderNo: 'AUD20260201164520004', vipLevel: 'VIP5', accountBalance: '45,600.00', ipAddress: '192.168.1.103',
+                deviceInfo: 'Firefox 122 / macOS 14', auditProgress: 44
+            },
+            {
+                id: 5, memberId: '2013206764355186694', username: 'user005', transactionType: '注册', activityName: '新用户注册奖励',
+                currency: 'INR', transactionAmount: '100.00', auditMultiplier: 10, auditAmount: '1,000.00',
+                completedAudit: '0.00', remainingAudit: '1,000.00', auditAdjustment: '0.00', remark: '',
+                status: '未开始', releaseSettings: '输光自动解除 | 额度立刻解除', operator: '系统', operationType: 'create',
+                adjustmentDetail: null, createTime: '2026-02-05 12:10:05', updateTime: '2026-02-05 12:10:05',
+                orderNo: 'AUD20260205121005005', vipLevel: 'VIP0', accountBalance: '100.00', ipAddress: '192.168.1.104',
+                deviceInfo: 'Chrome 120 / Windows 11', auditProgress: 0
+            },
+            {
+                id: 6, memberId: '2013206764355186695', username: 'user006', transactionType: '活动', activityName: '春节特惠活动',
+                currency: 'INR', transactionAmount: '2,000.00', auditMultiplier: '-', auditAmount: '5,000.00',
+                completedAudit: '2,100.00', remainingAudit: '2,900.00', auditAdjustment: '+500.00', remark: '自定义活动名称，固定稽核金额5000，人工增加500稽核',
+                status: '进行中', releaseSettings: '输光自动解除 | 充值后结束', operator: 'admin003', operationType: 'adjust',
+                adjustmentDetail: '稽核金额调整：增加500.00', createTime: '2026-02-02 09:30:00', updateTime: '2026-02-05 10:00:00',
+                orderNo: 'AUD20260202093000006', vipLevel: 'VIP4', accountBalance: '12,500.00', ipAddress: '192.168.1.105',
+                deviceInfo: 'Edge 120 / Windows 10', auditProgress: 42
+            },
+            {
+                id: 7, memberId: '2013206764355186696', username: 'user007', transactionType: '调账', activityName: '人工调账',
+                currency: 'INR', transactionAmount: '3,500.00', auditMultiplier: 2, auditAmount: '7,000.00',
+                completedAudit: '7,000.00', remainingAudit: '0.00', auditAdjustment: '0.00', remark: '客户投诉补偿，修改为输光自动解除',
+                status: '已完成', releaseSettings: '输光自动解除 | 充值后解除', operator: 'admin001', operationType: 'adjust',
+                adjustmentDetail: '解除设置调整：输光不自动解除 → 输光自动解除', createTime: '2026-01-30 15:20:00', updateTime: '2026-02-03 14:50:30',
+                orderNo: 'AUD20260130152000007', vipLevel: 'VIP3', accountBalance: '5,200.00', ipAddress: '192.168.1.106',
+                deviceInfo: 'Safari 17 / macOS 14', auditProgress: 100
+            },
+            {
+                id: 8, memberId: '2013206764355186697', username: 'user008', transactionType: '存款', activityName: '每日充值活动',
+                currency: 'INR', transactionAmount: '800.00', auditMultiplier: 4, auditAmount: '3,200.00',
+                completedAudit: '1,600.00', remainingAudit: '1,600.00', auditAdjustment: '0.00', remark: '限定仅真人和体育平台',
+                status: '进行中', releaseSettings: '输光自动解除 | 额度立刻解除', operator: 'admin004', operationType: 'adjust',
+                adjustmentDetail: '平台限制调整：不限制 → 仅限以下平台（真人、体育）', createTime: '2026-02-05 08:15:20', updateTime: '2026-02-05 11:45:10',
+                orderNo: 'AUD20260205081520008', vipLevel: 'VIP2', accountBalance: '3,800.00', ipAddress: '192.168.1.107',
+                deviceInfo: 'Chrome 120 / Android 14', auditProgress: 50
+            },
+            {
+                id: 9, memberId: '2013206764355186698', username: 'user009', transactionType: '活动', activityName: '邀请好友',
+                currency: 'INR', transactionAmount: '1,500.00', auditMultiplier: 6, auditAmount: '9,000.00',
+                completedAudit: '4,200.00', remainingAudit: '4,800.00', auditAdjustment: '0.00', remark: '排除电竞和捕鱼平台',
+                status: '进行中', releaseSettings: '输光自动解除 | 立刻解除', operator: 'admin002', operationType: 'adjust',
+                adjustmentDetail: '平台限制调整：不限制 → 排除以下平台（电竞、捕鱼）', createTime: '2026-02-04 13:25:30', updateTime: '2026-02-05 09:20:15',
+                orderNo: 'AUD20260204132530009', vipLevel: 'VIP3', accountBalance: '7,200.00', ipAddress: '192.168.1.108',
+                deviceInfo: 'Firefox 122 / Windows 11', auditProgress: 47
+            },
+            {
+                id: 10, memberId: '2013206764355186699', username: 'user010', transactionType: '奖金', activityName: 'VIP周俸禄',
+                currency: 'INR', transactionAmount: '5,000.00', auditMultiplier: 5, auditAmount: '25,000.00',
+                completedAudit: '8,000.00', remainingAudit: '17,000.00', auditAdjustment: '+2,000.00', remark: '增加稽核金额并修改解除方式',
+                status: '进行中', releaseSettings: '输光自动解除 | 立刻解除', operator: 'admin003', operationType: 'adjust',
+                adjustmentDetail: '稽核金额调整：增加2,000.00；解除方式调整：充值后解除 → 立刻解除', createTime: '2026-02-03 10:40:00', updateTime: '2026-02-05 14:30:25',
+                orderNo: 'AUD20260203104000010', vipLevel: 'VIP6', accountBalance: '28,500.00', ipAddress: '192.168.1.109',
+                deviceInfo: 'Chrome 120 / macOS 14', auditProgress: 32
+            }
+        ];
+
+        // 活动名称映射
+        const activityMap = {
+            'deposit': ['首充活动', '二充活动', '每日充值活动'],
+            'activity': ['投注返水', '每日签到', '红包雨活动', '邀请好友'],
+            'adjustment': ['系统调账', '人工调账', '补偿调账'],
+            'bonus': ['VIP奖金', '推广奖金', '任务奖金'],
+            'register': ['新用户注册奖励', '注册即送']
+        };
+
+        let filteredRecords = [...auditRecords];
+        let selectedRecord = null;
+
+        // 初始化表格
+        function renderTable() {
+            const tbody = document.getElementById('auditTableBody');
+            tbody.innerHTML = filteredRecords.map(record => `
+                <tr class="border-b hover:bg-gray-50 transition-colors">
+                    <td class="sticky-left px-4 py-3 text-sm text-gray-900 border-r">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 text-xs">会员ID:</span>
+                                <span class="text-gray-600">${record.memberId}</span>
+                                <button onclick="copyToClipboard('${record.memberId}')" class="text-gray-400 hover:text-blue-500 transition-colors" title="复制会员ID">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 text-xs">用户名:</span>
+                                <span class="text-gray-900">${record.username}</span>
+                                <button onclick="copyToClipboard('${record.username}')" class="text-gray-400 hover:text-blue-500 transition-colors" title="复制用户名">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">${record.transactionType}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">${record.activityName}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">${record.currency}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right border-r whitespace-nowrap">${record.transactionAmount}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-center border-r whitespace-nowrap">${record.auditMultiplier}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right border-r whitespace-nowrap">${record.auditAmount}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right border-r whitespace-nowrap">${record.completedAudit}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right border-r whitespace-nowrap">${record.remainingAudit}</td>
+                    <td class="px-4 py-3 text-sm text-right border-r whitespace-nowrap">
+                        <span class="${record.auditAdjustment.startsWith('+') ? 'text-red-600' : record.auditAdjustment.startsWith('-') ? 'text-green-600' : 'text-gray-900'}">${record.auditAdjustment}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate border-r" title="${record.remark}">${record.remark || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-center border-r whitespace-nowrap">
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                            record.status === '未开始' ? 'bg-gray-100 text-gray-700' : 
+                            record.status === '进行中' ? 'bg-blue-100 text-blue-700' : 
+                            'bg-green-100 text-green-700'
+                        }">${record.status}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">${record.releaseSettings}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">${record.operator}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r whitespace-nowrap">
+                        ${record.operator === '系统' ? '<span class="text-gray-600">记录生成</span>' : 
+                          record.operationType === 'adjust' ? `<span class="text-blue-600">${record.adjustmentDetail || '稽核调整'}</span>` : 
+                          '<span class="text-green-600">新增</span>'}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
+                        <div class="flex flex-col gap-1">
+                            <span>${record.createTime}</span>
+                            <span class="text-gray-500">${record.updateTime}</span>
+                        </div>
+                    </td>
+                    <td class="sticky-right px-4 py-3 text-sm">
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="openAdjustDialog(${record.id})" class="px-3 py-1.5 text-xs border border-blue-400 text-blue-600 rounded hover:bg-blue-50">稽核调整</button>
+                            <button onclick="openDetailDialog(${record.id})" class="px-3 py-1.5 text-xs border border-gray-400 text-gray-600 rounded hover:bg-gray-50">详情</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('totalCount').textContent = filteredRecords.length;
+        }
+
+        // 搜索功能
+        function handleSearch() {
+            const accountInfo = document.getElementById('accountInfo').value.trim().toLowerCase();
+            const status = document.getElementById('status').value;
+            const transactionType = document.getElementById('transactionType').value;
+            const createStartDate = document.getElementById('createStartDate').value;
+            const createEndDate = document.getElementById('createEndDate').value;
+
+            filteredRecords = auditRecords.filter(record => {
+                let match = true;
+
+                if (accountInfo) {
+                    match = match && (record.username.toLowerCase().includes(accountInfo) || record.memberId.includes(accountInfo));
+                }
+
+                if (status !== 'all') {
+                    const statusMap = { notStarted: '未开始', inProgress: '进行中', completed: '已完成' };
+                    match = match && (record.status === statusMap[status]);
+                }
+
+                if (transactionType !== 'all') {
+                    match = match && (record.transactionType === transactionType);
+                }
+
+                if (createStartDate && createEndDate) {
+                    const recordDate = record.createTime.split(' ')[0];
+                    match = match && (recordDate >= createStartDate && recordDate <= createEndDate);
+                }
+
+                return match;
+            });
+
+            renderTable();
+        }
+
+        // 重置功能
+        function handleReset() {
+            document.getElementById('accountInfo').value = '';
+            document.getElementById('status').value = 'all';
+            document.getElementById('transactionType').value = 'all';
+            document.getElementById('createStartDate').value = '2026-02-05';
+            document.getElementById('createEndDate').value = '2026-02-05';
+            document.getElementById('updateStartDate').value = '';
+            document.getElementById('updateEndDate').value = '';
+            
+            filteredRecords = [...auditRecords];
+            renderTable();
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已复制到剪贴板');
+            });
+        }
+
+        // 打开新增弹窗
+        function openAddDialog() {
+            document.getElementById('addDialog').classList.remove('hidden');
+        }
+
+        // 关闭新增弹窗
+        function closeAddDialog() {
+            document.getElementById('addDialog').classList.add('hidden');
+        }
+
+        // 搜索用户信息
+        function searchUserInfo() {
+            const accountInfo = document.getElementById('addAccountInfo').value;
+            if (accountInfo) {
+                document.getElementById('userBalance').value = '10,000.00';
+                document.getElementById('userWager').value = '5,000.00';
+            }
+        }
+
+        // 交易类型变化
+        function handleTransactionTypeChange() {
+            const type = document.getElementById('addTransactionType').value;
+            const activitySection = document.getElementById('activityNameSection');
+            const activitySelect = document.getElementById('addActivityName');
+            
+            if (type && type !== 'all') {
+                activitySection.classList.remove('hidden');
+                activitySelect.innerHTML = '<option value="">请选择活动名称</option>';
+                if (activityMap[type]) {
+                    activityMap[type].forEach(name => {
+                        activitySelect.innerHTML += `<option value="${name}">${name}</option>`;
+                    });
+                    activitySelect.innerHTML += '<option value="custom">自定义</option>';
+                }
+            } else {
+                activitySection.classList.add('hidden');
+                document.getElementById('customActivityNameSection').classList.add('hidden');
+            }
+        }
+
+        // 活动名称变化
+        function handleActivityNameChange() {
+            const value = document.getElementById('addActivityName').value;
+            if (value === 'custom') {
+                document.getElementById('customActivityNameSection').classList.remove('hidden');
+            } else {
+                document.getElementById('customActivityNameSection').classList.add('hidden');
+            }
+        }
+
+        // 稽核方式变化
+        function handleAuditMethodChange() {
+            const method = document.querySelector('input[name="auditMethod"]:checked').value;
+            const placeholder = method === 'amount' ? '请输入稽核金额' : '请输入交易金额倍数';
+            document.getElementById('auditValue').placeholder = placeholder;
+        }
+
+        // 自动解除变化
+        function handleAutoReleaseChange() {
+            const value = document.querySelector('input[name="autoRelease"]:checked').value;
+            const amountSection = document.getElementById('autoReleaseAmountSection');
+            const modeSection = document.getElementById('releaseModeSection');
+            
+            if (value === 'yes') {
+                amountSection.classList.remove('hidden');
+                modeSection.classList.remove('hidden');
+            } else {
+                amountSection.classList.add('hidden');
+                modeSection.classList.add('hidden');
+            }
+        }
+
+        // 解除方式变化
+        function handleReleaseModeChange() {
+            const value = document.querySelector('input[name="releaseMode"]:checked').value;
+            const depositTip = document.getElementById('depositTip');
+            if (value === 'deposit') {
+                depositTip.classList.remove('hidden');
+            } else {
+                depositTip.classList.add('hidden');
+            }
+        }
+
+        // 提交新增
+        function submitAdd() {
+            alert('新增稽核记录已提交');
+            closeAddDialog();
+        }
+
+        // 打开详情弹窗
+        function openDetailDialog(id) {
+            selectedRecord = auditRecords.find(r => r.id === id);
+            const content = document.getElementById('detailContent');
+            
+            content.innerHTML = `
+                <!-- 用户信息区块 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded">用户信息</h3>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                            selectedRecord.status === '未开始' ? 'bg-gray-100 text-gray-700' : 
+                            selectedRecord.status === '进行中' ? 'bg-blue-100 text-blue-700' : 
+                            'bg-green-100 text-green-700'
+                        }">${selectedRecord.status}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4">
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0 pt-0.5">会员ID:</span>
+                            <span class="text-sm font-medium text-gray-900 break-all">${selectedRecord.memberId}</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0 pt-0.5">用户名:</span>
+                            <span class="text-sm font-medium text-gray-900 break-all">${selectedRecord.username}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">VIP等级:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.vipLevel}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">账户余额:</span>
+                            <span class="text-sm font-medium text-green-600">${selectedRecord.currency} ${selectedRecord.accountBalance}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交易信息区块 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">交易信息</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">交易类型:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.transactionType}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">活动名称:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.activityName}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">币种:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.currency}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">交易金额:</span>
+                            <span class="text-sm font-semibold text-blue-600">${selectedRecord.currency} ${selectedRecord.transactionAmount}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 稽核信息区块 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">稽核信息</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">稽核倍数:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.auditMultiplier}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">稽核金额:</span>
+                            <span class="text-sm font-semibold text-orange-600">${selectedRecord.currency} ${selectedRecord.auditAmount}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">已稽核:</span>
+                            <span class="text-sm font-medium text-green-600">${selectedRecord.currency} ${selectedRecord.completedAudit}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">未稽核:</span>
+                            <span class="text-sm font-medium text-red-600">${selectedRecord.currency} ${selectedRecord.remainingAudit}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">稽核调整:</span>
+                            <span class="text-sm font-medium ${selectedRecord.auditAdjustment.startsWith('+') ? 'text-red-600' : selectedRecord.auditAdjustment.startsWith('-') ? 'text-green-600' : 'text-gray-900'}">${selectedRecord.currency} ${selectedRecord.auditAdjustment}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">稽核进度:</span>
+                            <div class="flex items-center gap-2 flex-1">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full transition-all" style="width: ${selectedRecord.auditProgress}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-blue-600">${selectedRecord.auditProgress}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 解除设置区块 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">解除设置</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">解除条件:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.releaseSettings}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作记录区块 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">操作记录</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">操作人:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.operator}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">操作内容:</span>
+                            ${selectedRecord.operator === '系统' ? '<span class="text-sm text-gray-600">记录生成</span>' : 
+                              selectedRecord.operationType === 'adjust' ? `<span class="text-sm text-blue-600">${selectedRecord.adjustmentDetail || '稽核调整'}</span>` : 
+                              '<span class="text-sm text-green-600">新增</span>'}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">创建时间:</span>
+                            <span class="text-sm text-gray-900">${selectedRecord.createTime}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 min-w-[100px]">更新时间:</span>
+                            <span class="text-sm text-gray-900">${selectedRecord.updateTime}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${selectedRecord.remark ? `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">备注信息</h3>
+                    <div class="text-sm text-gray-900 leading-relaxed">${selectedRecord.remark}</div>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('detailDialog').classList.remove('hidden');
+        }
+
+        // 关闭详情弹窗
+        function closeDetailDialog() {
+            document.getElementById('detailDialog').classList.add('hidden');
+        }
+
+        // 打开调整弹窗
+        function openAdjustDialog(id) {
+            selectedRecord = auditRecords.find(r => r.id === id);
+            const content = document.getElementById('adjustContent');
+            
+            const originalAmount = parseFloat(selectedRecord.auditAmount.replace(/,/g, ''));
+            
+            content.innerHTML = `
+                <!-- 用户基础信息 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">用户信息</h3>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">会员ID:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.memberId}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">用户名:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.username}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">交易类型:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.transactionType}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">活动名称:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.activityName}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 当前稽核信息 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-3 inline-block">当前稽核信息</h3>
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">稽核倍数:</span>
+                            <span class="text-sm font-medium text-gray-900">${selectedRecord.auditMultiplier}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">稽核金额:</span>
+                            <span class="text-sm font-semibold text-orange-600">${selectedRecord.currency} ${selectedRecord.auditAmount}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">已稽核:</span>
+                            <span class="text-sm font-medium text-green-600">${selectedRecord.currency} ${selectedRecord.completedAudit}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">未稽核:</span>
+                            <span class="text-sm font-medium text-red-600">${selectedRecord.currency} ${selectedRecord.remainingAudit}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">当前调整:</span>
+                            <span class="text-sm font-medium ${selectedRecord.auditAdjustment.startsWith('+') ? 'text-red-600' : selectedRecord.auditAdjustment.startsWith('-') ? 'text-green-600' : 'text-gray-900'}">${selectedRecord.currency} ${selectedRecord.auditAdjustment}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500 min-w-[100px] shrink-0">稽核进度:</span>
+                            <span class="text-sm font-medium text-blue-600">${selectedRecord.auditProgress}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 调整设置 -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 bg-blue-500 text-white px-3 py-1 rounded mb-4 inline-block">调整设置 <span class="text-red-400">*</span></h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 调整类型 -->
+                        <div class="grid grid-cols-4 gap-4 items-center">
+                            <label class="text-sm text-gray-700 text-right">调整类型 <span class="text-red-500">*</span></label>
+                            <div class="col-span-3 flex items-center gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="adjustType" value="increase" checked onchange="updateAdjustPreview()" class="w-4 h-4" />
+                                    <span class="text-sm">增加稽核金额</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="adjustType" value="decrease" onchange="updateAdjustPreview()" class="w-4 h-4" />
+                                    <span class="text-sm">减少稽核金额</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 调整金额 -->
+                        <div class="grid grid-cols-4 gap-4 items-center">
+                            <label class="text-sm text-gray-700 text-right">调整金额 <span class="text-red-500">*</span></label>
+                            <div class="col-span-3">
+                                <div class="flex items-center gap-3">
+                                    <input id="adjustAmount" type="number" placeholder="请输入调整金额" onchange="updateAdjustPreview()" oninput="updateAdjustPreview()" class="flex-1 h-9 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500" />
+                                    <button id="fillOriginalBtn" onclick="fillOriginalAmount()" class="hidden px-3 h-9 text-xs whitespace-nowrap border border-blue-400 text-blue-600 rounded hover:bg-blue-50">填入原金额</button>
+                                    <span class="text-sm text-gray-500 min-w-[60px]">${selectedRecord.currency}</span>
+                                </div>
+                                <p id="adjustTip" class="text-xs text-gray-400 mt-1">请输入要增加的稽核金额</p>
+                            </div>
+                        </div>
+
+                        <!-- 调整后金额预览 -->
+                        <div class="grid grid-cols-4 gap-4 items-center bg-blue-50 rounded-lg p-3">
+                            <label class="text-sm text-gray-700 text-right">调整后金额</label>
+                            <div class="col-span-3">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-500">原稽核金额:</span>
+                                        <span class="text-sm font-medium text-gray-900">${selectedRecord.currency} ${selectedRecord.auditAmount}</span>
+                                    </div>
+                                    <span class="text-gray-400">→</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-500">调整后:</span>
+                                        <span id="adjustedAmount" class="text-base font-semibold text-red-600">${selectedRecord.currency} ${selectedRecord.auditAmount}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 调整原因 -->
+                        <div class="grid grid-cols-4 gap-4 items-start">
+                            <label class="text-sm text-gray-700 text-right pt-2">调整原因</label>
+                            <div class="col-span-3">
+                                <textarea id="adjustReason" placeholder="请输入调整原因" class="w-full min-h-[60px] px-3 py-2 border border-gray-300 rounded text-sm resize-none focus:outline-none focus:border-blue-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('adjustDialog').classList.remove('hidden');
+        }
+
+        // 更新调整预览
+        function updateAdjustPreview() {
+            const adjustType = document.querySelector('input[name="adjustType"]:checked').value;
+            const adjustAmount = parseFloat(document.getElementById('adjustAmount').value) || 0;
+            const original = parseFloat(selectedRecord.auditAmount.replace(/,/g, ''));
+            
+            // 更新填入原金额按钮显示
+            const fillBtn = document.getElementById('fillOriginalBtn');
+            const adjustTip = document.getElementById('adjustTip');
+            
+            if (adjustType === 'decrease') {
+                fillBtn.classList.remove('hidden');
+                adjustTip.textContent = `请输入正数，最大不超过原稽核金额 ${selectedRecord.currency} ${selectedRecord.auditAmount}`;
+            } else {
+                fillBtn.classList.add('hidden');
+                adjustTip.textContent = '请输入要增加的稽核金额';
+            }
+            
+            // 计算调整后金额
+            const result = adjustType === 'increase' ? original + adjustAmount : original - adjustAmount;
+            const adjustedAmountEl = document.getElementById('adjustedAmount');
+            adjustedAmountEl.textContent = `${selectedRecord.currency} ${result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            adjustedAmountEl.className = `text-base font-semibold ${adjustType === 'increase' ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        // 填入原金额
+        function fillOriginalAmount() {
+            const original = parseFloat(selectedRecord.auditAmount.replace(/,/g, ''));
+            document.getElementById('adjustAmount').value = original;
+            updateAdjustPreview();
+        }
+
+        // 关闭调整弹窗
+        function closeAdjustDialog() {
+            document.getElementById('adjustDialog').classList.add('hidden');
+        }
+
+        // 提交调整
+        function submitAdjust() {
+            alert('稽核调整已提交');
+            closeAdjustDialog();
+        }
+
+        // 打开全局设置弹窗
+        function openGlobalSettingsDialog() {
+            document.getElementById('globalSettingsDialog').classList.remove('hidden');
+        }
+
+        // 关闭全局设置弹窗
+        function closeGlobalSettingsDialog() {
+            document.getElementById('globalSettingsDialog').classList.add('hidden');
+        }
+
+        // 保存全局设置
+        function saveGlobalSettings() {
+            alert('全局设置已保存');
+            closeGlobalSettingsDialog();
+        }
+
+        // 页面加载时初始化表格
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+        });
+    </script>
+</body>
+</html>
