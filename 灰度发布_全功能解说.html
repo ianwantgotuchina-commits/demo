@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>灰度发布 · 全功能解说（图文版）</title>
+<style>
+  :root{
+    --blue:#409eff; --blue-d:#2b7fd6; --blue-bg:#eef2fb;
+    --green:#15a34a; --green-bg:#eef9f0;
+    --orange:#e6a23c; --orange-bg:#fdf6ec; --orange-d:#b8741a;
+    --red:#f56c6c; --red-bg:#fef0f0; --purple:#8b5cf6; --purple-bg:#f3effd; --purple-d:#6d3fc4;
+    --ink:#1f2937; --gray:#5b6472; --gray-l:#8a93a3;
+    --line:#e5e7eb; --line-2:#ebeef5; --bg:#f5f7fa; --card:#fff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.7;font-size:15px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px;}
+
+  .hero{background:linear-gradient(120deg,#3b82f6,#409eff 60%,#22a7f0);color:#fff;
+    padding:46px 40px;border-radius:0 0 22px 22px;margin-bottom:30px;box-shadow:0 8px 28px rgba(64,158,255,.25);}
+  .hero h1{margin:0 0 10px;font-size:30px;letter-spacing:1px;}
+  .hero p{margin:0;opacity:.94;font-size:15px;max-width:780px}
+  .hero .tags{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+  .hero .tag{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);padding:4px 12px;border-radius:20px;font-size:13px}
+
+  .toc{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:30px;
+    display:flex;gap:6px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .toc a{font-size:13px;color:var(--gray);text-decoration:none;padding:5px 11px;border-radius:7px;transition:.15s}
+  .toc a:hover{background:var(--blue-bg);color:var(--blue-d)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:28px 30px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+  .sec-h{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+  .sec-h .no{background:var(--blue);color:#fff;width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none}
+  .sec-h h2{margin:0;font-size:21px}
+  .lead{color:var(--gray);margin:-2px 0 14px;font-size:14.5px}
+  p{margin:10px 0}.muted{color:var(--gray)}b,strong{color:var(--ink)}
+  .cap{font-size:12.5px;color:var(--gray-l);text-align:center;margin:6px 0 16px}
+  .cap b{color:var(--blue-d)}
+
+  /* ===== 浏览器窗框（包裹所有界面图）===== */
+  .mock{border:1px solid #d8dde6;border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(31,41,55,.10);margin:6px 0;background:#fff}
+  .mock-bar{background:#f0f2f5;padding:8px 12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #e3e7ee}
+  .mock-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
+  .mock-bar .url{flex:1;margin-left:8px;background:#fff;border:1px solid #e3e7ee;border-radius:6px;
+    font-size:11.5px;color:var(--gray-l);padding:3px 10px}
+  .mock-body{padding:14px 16px;background:#fff}
+
+  /* 后台界面通用件 */
+  .m-title{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .m-title .ver{margin-left:auto;font-size:11px;font-weight:600;background:var(--blue-bg);color:var(--blue-d);padding:2px 9px;border-radius:20px}
+  .m-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .fld{font-size:11.5px;border:1px solid #dcdfe6;border-radius:6px;padding:5px 9px;color:var(--gray);background:#fff;min-width:96px}
+  .fld.sel::after{content:" ▾";color:var(--gray-l)}
+  .mbtn{font-size:11.5px;border-radius:6px;padding:5px 12px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:default}
+  .mbtn.ghost{background:#fff;color:var(--gray);border-color:#dcdfe6;font-weight:500}
+  .mbtn.ok{background:var(--green);border-color:var(--green)}
+  .mbtn.warn{background:#fff;color:var(--orange-d);border-color:var(--orange)}
+  .mbtn.dang{background:#fff;color:var(--red);border-color:var(--red)}
+  .sw{margin-left:auto;font-size:11.5px;color:var(--gray);display:flex;align-items:center;gap:6px}
+  .sw i{width:30px;height:16px;background:#dcdfe6;border-radius:20px;position:relative;display:inline-block}
+  .sw i::after{content:"";position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:2px;left:2px}
+
+  table.mt{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.mt th{background:#f8fafc;color:var(--gray);font-weight:700;padding:7px 9px;text-align:left;border-bottom:1px solid #ebeef5;white-space:nowrap}
+  table.mt td{padding:8px 9px;border-bottom:1px solid #f2f4f7;color:var(--ink);white-space:nowrap}
+  .key{font-family:"SF Mono",Consolas,monospace;color:var(--purple-d);font-size:10.5px;background:#f6f3fd;padding:1px 5px;border-radius:4px}
+  .op{color:var(--blue-d);margin-right:7px;cursor:default}
+  .op.warn{color:var(--orange-d)}.op.dang{color:var(--red)}.op.ok{color:var(--green)}
+
+  /* 状态/按钮药丸 */
+  .b-st{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;white-space:nowrap}
+  .st-wait{background:#f3f4f6;color:var(--gray)}.st-gray{background:var(--blue-bg);color:var(--blue-d)}
+  .st-full{background:var(--green-bg);color:var(--green)}.st-close{background:var(--orange-bg);color:var(--orange-d)}.st-arch{background:#eceff3;color:var(--gray)}
+
+  /* 表单mockup */
+  .form-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .form-row .fl{flex:none;width:78px;text-align:right;font-size:12px;color:var(--gray)}
+  .form-row .fl .rq{color:var(--red)}
+  .form-row .fi{flex:1;border:1px solid #dcdfe6;border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);background:#fff}
+  .form-row .fi.ph{color:var(--gray-l)}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg span{font-size:11.5px;border:1px solid #dcdfe6;border-radius:6px;padding:4px 11px;color:var(--gray);background:#fff}
+  .seg span.on{border-color:var(--blue);color:var(--blue-d);background:var(--blue-bg);font-weight:600}
+  .grp{border:1px solid #eef0f3;border-radius:8px;padding:11px 13px;margin-bottom:10px}
+  .grp .gt{font-size:12px;font-weight:700;color:var(--blue-d);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+
+  /* ===== 漏斗图 ===== */
+  .funnel{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0}
+  .fn{color:#fff;text-align:center;border-radius:8px;padding:9px 0;font-weight:700;font-size:13px;position:relative}
+  .fn small{display:block;font-weight:400;font-size:11px;opacity:.9}
+  .fn-arrow{color:var(--gray-l);font-size:14px}
+
+  /* ===== 命中流程图（纵向带分支）===== */
+  .flow{margin:6px 0}
+  .fstep{display:flex;gap:0;align-items:stretch;margin-bottom:6px}
+  .fstep .ico{flex:none;width:34px;display:flex;flex-direction:column;align-items:center}
+  .fstep .ico .c{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+  .fstep .ico .ln{flex:1;width:2px;background:#dbe4f0;margin:2px 0}
+  .fstep:last-child .ico .ln{display:none}
+  .fstep .bd{flex:1;padding-bottom:10px;padding-left:12px}
+  .fstep .bd .bt{font-weight:700;font-size:14px}
+  .fstep .bd .br{font-size:13px;color:var(--gray);margin-top:2px}
+  .branch{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .branch .bx{font-size:12px;padding:4px 10px;border-radius:7px;font-weight:600}
+  .bx.miss{background:var(--red-bg);color:var(--red)}
+  .bx.hit{background:var(--green-bg);color:var(--green)}
+  .bx.next{background:var(--blue-bg);color:var(--blue-d)}
+
+  /* ===== 状态机图 ===== */
+  .smwrap{overflow-x:auto}
+  .sm{min-width:560px;position:relative;padding:8px 0}
+  .sm .lane{display:flex;align-items:center;justify-content:center;gap:0}
+  .node{border-radius:10px;padding:11px 16px;font-weight:700;font-size:13.5px;border:2px solid;white-space:nowrap}
+  .n-wait{border-color:var(--gray-l);background:#f3f4f6;color:var(--gray)}
+  .n-gray{border-color:var(--blue);background:var(--blue-bg);color:var(--blue-d)}
+  .n-full{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+  .n-close{border-color:var(--orange);background:var(--orange-bg);color:var(--orange-d)}
+  .n-arch{border-color:var(--gray-l);background:#eceff3;color:var(--gray)}
+  .ed{display:flex;flex-direction:column;align-items:center;color:var(--gray-l);font-size:18px;padding:0 4px;min-width:64px}
+  .ed small{font-size:10.5px;font-weight:400;line-height:1.1;text-align:center}
+  .ed.rev small{color:var(--orange-d)}
+
+  /* ===== 数据分析柱状图 ===== */
+  .bars{display:flex;gap:26px;align-items:flex-end;justify-content:center;height:170px;padding:14px 0 0}
+  .barcol{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .barcol .pair{display:flex;gap:8px;align-items:flex-end;height:100%}
+  .bar{width:38px;border-radius:7px 7px 0 0;position:relative;display:flex;justify-content:center}
+  .bar .v{position:absolute;top:-19px;font-size:11.5px;font-weight:700}
+  .bar.g{background:linear-gradient(var(--green),#3cc66f)}
+  .bar.c{background:linear-gradient(#b6c0cf,#cdd5e0)}
+  .barcol .xl{font-size:12px;color:var(--gray);font-weight:600}
+  .legend{display:flex;gap:18px;justify-content:center;font-size:12px;color:var(--gray);margin-top:10px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle}
+
+  /* 命中模拟器 */
+  .sim-in{background:var(--purple-bg);border:1px solid #e0d5fa;border-radius:9px;padding:11px 13px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+  .sim-in .fi{flex:none;width:130px}
+  .sim-card{border:1px solid #eef0f3;border-radius:9px;overflow:hidden}
+  .sim-card .sh{background:#fafbff;padding:8px 12px;font-size:12px;font-weight:700;color:var(--purple-d);border-bottom:1px solid #eef0f3}
+  .sim-card .sr{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #f4f5f8;font-size:12.5px}
+  .sim-card .sr:last-child{border-bottom:none}
+  .tag2{font-size:11px;padding:1px 8px;border-radius:5px;font-weight:700;white-space:nowrap}
+  .t-hit{background:var(--green-bg);color:var(--green)}.t-miss{background:#f3f4f6;color:var(--gray-l)}
+  .t-keep{background:var(--blue-bg);color:var(--blue-d)}.t-cover{background:var(--orange-bg);color:var(--orange-d)}
+
+  table.doc{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  table.doc th,table.doc td{border:1px solid var(--line-2);padding:9px 12px;text-align:left;vertical-align:top}
+  table.doc th{background:#f8fafc;font-weight:700;color:var(--gray)}
+  .note{border-left:4px solid var(--blue);background:var(--blue-bg);padding:11px 15px;border-radius:0 8px 8px 0;margin:13px 0;font-size:13.5px}
+  .note.warn{border-color:var(--orange);background:var(--orange-bg)}.note.tip{border-color:var(--green);background:var(--green-bg)}
+  .note .nt{font-weight:700;margin-bottom:2px}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:"SF Mono",Consolas,monospace;color:#c0341d}
+  footer{text-align:center;color:var(--gray-l);font-size:12.5px;margin-top:30px}
+  @media(max-width:760px){.form-row .fl{width:60px}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>灰度发布 · 全功能解说</h1>
+  <p>对照后台原型，逐个功能配<b style="color:#fff">界面示意图 + 图表</b>讲解。适合投屏演示、培训交接、测试对照。</p>
+  <div class="tags">
+    <span class="tag">列表管理</span><span class="tag">新建/编辑</span><span class="tag">投放规则</span>
+    <span class="tag">命中模拟器</span><span class="tag">数据分析</span><span class="tag">操作日志</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <a href="#s1">① 灰度列表</a>
+    <a href="#s2">② 新建/编辑</a>
+    <a href="#s3">③ 投放规则</a>
+    <a href="#s4">④ 命中逻辑</a>
+    <a href="#s5">⑤ 命中模拟器</a>
+    <a href="#s6">⑥ 状态机</a>
+    <a href="#s7">⑦ 数据分析</a>
+    <a href="#s8">⑧ 操作日志</a>
+  </nav>
+
+  <!-- 1 列表 -->
+  <section id="s1">
+    <div class="sec-h"><span class="no">1</span><h2>灰度功能列表</h2></div>
+    <p class="lead">模块首页：上方筛选 + 工具栏，下方表格。最后一列「操作」按钮<b>随状态动态变化</b>。</p>
+    <div class="mock">
+      <div class="mock-bar"><i class="dot-r"></i><i class="dot-y"></i><i class="dot-g"></i><span class="url">后台 / 风控运营 / 灰度发布管理</span></div>
+      <div class="mock-body">
+        <div class="m-title">🚦 灰度发布管理 <span style="font-weight:400;font-size:11px;color:var(--gray-l)">功能级灰度 · 不做环境隔离</span><span class="ver">配置版本 grayConfigVersion: 130</span></div>
+        <div class="m-filters">
+          <span class="fld">功能名称</span><span class="fld">功能Key</span>
+          <span class="fld sel">所属模块</span><span class="fld sel">状态</span><span class="fld sel">互斥组</span>
+          <span class="mbtn">查询</span><span class="mbtn ghost">重置</span>
+          <span class="sw">显示已归档 <i></i></span>
+        </div>
+        <div style="text-align:right;margin-bottom:8px"><span class="mbtn">＋ 新建灰度功能</span></div>
+        <table class="mt">
+          <tr><th>功能名称</th><th>功能Key</th><th>模块</th><th>状态</th><th>投放规则</th><th>互斥/优先级</th><th>生效时间</th><th>操作</th></tr>
+          <tr><td>新版充值页</td><td><span class="key">new_recharge_page</span></td><td>充值</td><td><span class="b-st st-gray">灰度中</span></td><td>VIP3+ · 20%</td><td>recharge · 1</td><td>06-22 00:00</td>
+            <td><span class="op">编辑</span><span class="op ok">推全量</span><span class="op dang">关闭</span><span class="op">日志</span></td></tr>
+          <tr><td>新版活动中心</td><td><span class="key">new_activity_center</span></td><td>活动</td><td><span class="b-st st-full">已全量</span></td><td>全部会员</td><td>—</td><td>06-10 00:00</td>
+            <td><span class="op warn">回退灰度</span><span class="op dang">关闭</span><span class="op">归档</span></td></tr>
+          <tr><td>充值页 V3</td><td><span class="key">recharge_page_v3</span></td><td>充值</td><td><span class="b-st st-close">已关闭</span></td><td>白名单</td><td>recharge · 2</td><td>06-18 00:00</td>
+            <td><span class="op">重新开启</span><span class="op">归档</span><span class="op">日志</span></td></tr>
+          <tr><td>新版投注确认</td><td><span class="key">new_bet_confirm</span></td><td>投注</td><td><span class="b-st st-wait">未生效</span></td><td>标签:高价值</td><td>—</td><td>06-25 00:00</td>
+            <td><span class="op">编辑</span><span class="op dang">关闭</span><span class="op">归档</span></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="cap">▲ <b>灰度功能列表页</b>：注意每行操作按钮按状态不同（灰度中可推全量、已全量可回退、已关闭可重开）</div>
+  </section>
+
+  <!-- 2 新建编辑 -->
+  <section id="s2">
+    <div class="sec-h"><span class="no">2</span><h2>新建 / 编辑灰度功能</h2></div>
+    <p class="lead">弹窗分三段：<b>基础信息 → 投放规则 → 互斥设置</b>。</p>
+    <div class="mock">
+      <div class="mock-bar"><i class="dot-r"></i><i class="dot-y"></i><i class="dot-g"></i><span class="url">弹窗 · 新建灰度功能</span></div>
+      <div class="mock-body">
+        <div class="grp">
+          <div class="gt">📋 基础信息</div>
+          <div class="form-row"><span class="fl"><span class="rq">*</span>功能名称</span><span class="fi">新版充值页</span></div>
+          <div class="form-row"><span class="fl"><span class="rq">*</span>功能Key</span><span class="fi"><span class="key">new_recharge_page</span> <span style="color:var(--gray-l);font-size:11px">· 创建后不建议修改</span></span></div>
+          <div class="form-row"><span class="fl"><span class="rq">*</span>所属模块</span><span class="fi ph">充值 ▾</span><span class="fl"><span class="rq">*</span>初始状态</span><span class="fi ph">未生效 ▾</span></div>
+          <div class="form-row"><span class="fl"><span class="rq">*</span>生效时间</span><span class="fi ph">2026-06-25 00:00</span><span class="fl">结束时间</span><span class="fi ph">不填则长期有效</span></div>
+        </div>
+        <div class="grp">
+          <div class="gt">🎯 投放规则</div>
+          <div class="form-row"><span class="fl">白名单</span><span class="fi ph">手输 / 批量粘贴 / 导入会员ID（直通命中）</span></div>
+          <div class="form-row"><span class="fl">VIP等级</span><span class="seg"><span>不限</span><span class="on">VIP3 以上</span></span></div>
+          <div class="form-row"><span class="fl">注册时间</span><span class="seg"><span>不限</span><span>最近7天</span><span class="on">最近30天</span><span>自定义</span></span></div>
+          <div class="form-row"><span class="fl">百分比</span><span class="seg"><span>5%</span><span class="on">20%</span><span>50%</span><span>100%</span></span></div>
+        </div>
+        <div class="grp">
+          <div class="gt">🔀 互斥设置</div>
+          <div class="form-row"><span class="fl">是否互斥</span><span class="seg"><span class="on">是</span><span>否</span></span><span class="fl">互斥组</span><span class="fi"><span class="key">recharge_page</span></span><span class="fl">优先级</span><span class="fi">1</span></div>
+        </div>
+        <div style="text-align:right"><span class="mbtn ghost">取消</span> <span class="mbtn">确定</span></div>
+      </div>
+    </div>
+    <div class="cap">▲ <b>新建/编辑弹窗</b>：标 <span style="color:var(--red)">*</span> 为必填；灰度中/已全量状态下功能 Key 锁定不可改</div>
+  </section>
+
+  <!-- 3 投放规则 漏斗 -->
+  <section id="s3">
+    <div class="sec-h"><span class="no">3</span><h2>投放规则：人群是怎么被筛出来的</h2></div>
+    <p class="lead">除白名单直通外，其余规则是「硬条件 AND 准入 → 再按百分比放量」。一张漏斗图看懂。</p>
+    <div class="funnel">
+      <div class="fn" style="background:#94a3b8;width:100%">全站会员　100 万<small>所有注册会员</small></div>
+      <div class="fn-arrow">▼ 硬条件准入（VIP3+ ＆ 近30天注册 ＆ 标签，全满足）</div>
+      <div class="fn" style="background:var(--blue);width:62%">满足硬条件　5 万<small>进入百分比判断的「目标人群」</small></div>
+      <div class="fn-arrow">▼ 百分比放量 20%（在目标人群里按 hash 分流）</div>
+      <div class="fn" style="background:var(--green);width:34%">最终命中　1 万<small>看到新版的人 ≈ 5万 × 20%</small></div>
+    </div>
+    <div class="note warn"><div class="nt">⚠️ 最易误解的一点</div>百分比是 <b>「目标人群内」</b> 的百分比，<u>不是全站</u>。上图 20% 命中的是 1 万（5万×20%），不是 20 万。</div>
+    <div style="background:#1f2937;color:#e6edf3;padding:10px 14px;border-radius:8px;font-size:12.5px;font-family:'SF Mono',Consolas,monospace;white-space:pre;overflow-x:auto">分流公式：slot = hash(会员ID + "_" + 功能Key) % 100，  命中条件：slot < 放量百分比
+拼功能Key做"盐" → 各功能独立分流；slot<阈值 → 放量从20%→50%时老命中者不丢失</div>
+    <div class="note tip"><div class="nt">🎫 白名单是例外</div>白名单会员<b>直接命中</b>，跳过上面整个漏斗。用于内测号、运营号、老板号。</div>
+  </section>
+
+  <!-- 4 命中逻辑流程 -->
+  <section id="s4">
+    <div class="sec-h"><span class="no">4</span><h2>命中判定逻辑（后端怎么算）</h2></div>
+    <p class="lead">每个功能对每个会员，<b>固定顺序</b>往下判，顺序不能乱。</p>
+    <div class="flow">
+      <div class="fstep"><div class="ico"><div class="c">1</div><div class="ln"></div></div><div class="bd">
+        <div class="bt">看功能状态</div>
+        <div class="branch"><span class="bx miss">已关闭/已归档/未生效 → 不命中</span><span class="bx hit">已全量 → 全命中</span><span class="bx next">灰度中 → 往下</span></div>
+      </div></div>
+      <div class="fstep"><div class="ico"><div class="c">2</div><div class="ln"></div></div><div class="bd">
+        <div class="bt">白名单优先</div>
+        <div class="branch"><span class="bx hit">在白名单 → 直接命中（标记"白名单"）</span><span class="bx next">不在 → 往下</span></div>
+      </div></div>
+      <div class="fstep"><div class="ico"><div class="c">3</div><div class="ln"></div></div><div class="bd">
+        <div class="bt">硬条件准入（AND）</div>
+        <div class="branch"><span class="bx next">VIP ＆ 标签 ＆ 注册时间 全满足 → 往下</span><span class="bx miss">差一个 → 不命中</span></div>
+      </div></div>
+      <div class="fstep"><div class="ico"><div class="c">4</div><div class="ln"></div></div><div class="bd">
+        <div class="bt">百分比放量</div>
+        <div class="branch"><span class="bx hit">slot &lt; 百分比 → 命中（标记"普通"）</span><span class="bx miss">否则 → 不命中</span></div>
+      </div></div>
+      <div class="fstep"><div class="ico"><div class="c">5</div></div><div class="bd">
+        <div class="bt">互斥裁决 → 返回最终 Key 列表</div>
+        <div class="br">同组命中多个时：<b>白名单命中 &gt; 普通命中</b>；同层<b>优先级数字大者胜</b>。前端拿最终列表展示新版。</div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 5 命中模拟器 -->
+  <section id="s5">
+    <div class="sec-h" style="--blue:var(--purple)"><span class="no" style="background:var(--purple)">5</span><h2>命中模拟器 ★ 亮点</h2></div>
+    <p class="lead">不用上线试——输入一个会员，<b>当场预演</b>他命中哪些功能、为什么。运营自测、测试验证都靠它。</p>
+    <div class="mock">
+      <div class="mock-bar"><i class="dot-r"></i><i class="dot-y"></i><i class="dot-g"></i><span class="url">灰度发布 · 命中模拟器</span></div>
+      <div class="mock-body">
+        <div class="sim-in">
+          <span style="font-weight:700;color:var(--purple-d)">▸ 输入</span>
+          会员ID <span class="fi" style="display:inline-block">100001</span>
+          注册 <span class="fi" style="display:inline-block;width:60px">45</span> 天前
+          <span class="mbtn" style="background:var(--purple);border-color:var(--purple)">计算命中</span>
+        </div>
+        <div class="sim-card">
+          <div class="sh">✅ 最终命中结果（接口返回 grayFeatures）</div>
+          <div class="sr"><span style="color:var(--purple-d);font-weight:700">grayFeatures =</span> <span class="key">new_recharge_page</span> <span class="key">new_activity_center</span></div>
+          <div class="sh" style="border-top:1px solid #eef0f3">🔍 逐功能判定明细</div>
+          <div class="sr"><span class="key" style="width:140px">new_recharge_page</span><span class="tag2 t-hit">命中</span><span class="tag2" style="background:var(--blue-bg);color:var(--blue-d)">普通命中</span><span class="muted">slot=7 &lt; 20%，且 VIP3+/近30天 满足</span></div>
+          <div class="sr"><span class="key" style="width:140px">recharge_page_v3</span><span class="tag2 t-miss">未命中</span><span class="tag2 t-cover">被覆盖</span><span class="muted">同组 V2 白名单命中，V3 被裁掉</span></div>
+          <div class="sr"><span class="key" style="width:140px">new_bet_confirm</span><span class="tag2 t-miss">未命中</span><span></span><span class="muted">无「高价值」标签，硬条件不通过</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">▲ <b>命中模拟器</b>：把后端「状态→白名单→硬条件→百分比→互斥」的判定<b>可视化</b>，一眼看出谁看哪版</div>
+    <div class="note tip"><div class="nt">为什么强烈推荐讲这块</div>灰度最大的疑问就是「这个人到底看哪版」。有了模拟器，沟通成本直接降一半。</div>
+  </section>
+
+  <!-- 6 状态机 -->
+  <section id="s6">
+    <div class="sec-h"><span class="no">6</span><h2>状态机：可推全量、可回滚</h2></div>
+    <p class="lead">核心价值在于 <b>能反向流转</b>（已全量能回退、已关闭能重开）。所有改状态都需<b>二次确认</b>。</p>
+    <div class="smwrap"><div class="sm">
+      <div class="lane">
+        <span class="node n-wait">未生效</span>
+        <span class="ed">→<small>到生效时间</small></span>
+        <span class="node n-gray">灰度中</span>
+        <span class="ed">→<small>推全量</small></span>
+        <span class="node n-full">已全量</span>
+      </div>
+      <div class="lane" style="margin:10px 0">
+        <span style="width:84px"></span>
+        <span class="ed rev">⇅<small>关闭/重开</small></span>
+        <span style="width:84px"></span>
+        <span class="ed rev">⇅<small>回退/关闭</small></span>
+      </div>
+      <div class="lane">
+        <span class="node n-close">已关闭</span>
+        <span class="ed">→<small>归档</small></span>
+        <span class="node n-arch">已归档</span>
+        <span class="ed rev">↩<small>恢复</small></span>
+        <span style="font-size:12px;color:var(--gray-l)">误归档可恢复</span>
+      </div>
+    </div></div>
+    <table class="doc">
+      <tr><th>状态</th><th>会员看到</th><th>可用操作</th></tr>
+      <tr><td><span class="b-st st-wait">未生效</span></td><td>旧版（未到生效时间）</td><td>编辑 · 关闭 · 归档 · 日志</td></tr>
+      <tr><td><span class="b-st st-gray">灰度中</span></td><td>命中→新版，否则旧版</td><td>编辑 · <b>推全量</b> · 关闭 · 归档 · 日志</td></tr>
+      <tr><td><span class="b-st st-full">已全量</span></td><td>全员新版</td><td><b>回退灰度</b> · 关闭 · 归档 · 日志</td></tr>
+      <tr><td><span class="b-st st-close">已关闭</span></td><td>全员旧版</td><td>重新开启 · 归档 · 日志</td></tr>
+      <tr><td><span class="b-st st-arch">已归档</span></td><td>不参与判断</td><td>恢复 · 日志</td></tr>
+    </table>
+    <div class="note warn"><div class="nt">⚠️ 高风险</div><b>推全量 / 关闭 / 回退</b> 影响全体会员，只开放给管理员或指定负责人；每次操作 <code>grayConfigVersion +1</code>，前端最长 5 分钟全端生效。</div>
+  </section>
+
+  <!-- 7 数据分析 -->
+  <section id="s7">
+    <div class="sec-h"><span class="no">7</span><h2>数据分析：该不该推全量</h2></div>
+    <p class="lead"><b>灰度组 vs 对照组</b>对比关键指标，给推全量/回滚决策提供依据。</p>
+    <div class="mock">
+      <div class="mock-bar"><i class="dot-r"></i><i class="dot-y"></i><i class="dot-g"></i><span class="url">灰度发布 · 数据分析</span></div>
+      <div class="mock-body">
+        <div class="m-filters"><span class="fld sel">分析功能：新版充值页</span><span class="fld sel">统计周期：近7天</span><span class="mbtn ghost">刷新对比</span></div>
+        <div class="bars">
+          <div class="barcol"><div class="pair">
+            <div class="bar g" style="height:78%"><span class="v">32.1%</span></div>
+            <div class="bar c" style="height:62%"><span class="v">25.4%</span></div>
+          </div><div class="xl">充值转化率</div></div>
+          <div class="barcol"><div class="pair">
+            <div class="bar g" style="height:22%"><span class="v">0.8%</span></div>
+            <div class="bar c" style="height:30%"><span class="v">1.1%</span></div>
+          </div><div class="xl">客诉率</div></div>
+          <div class="barcol"><div class="pair">
+            <div class="bar g" style="height:18%"><span class="v">0.5%</span></div>
+            <div class="bar c" style="height:19%"><span class="v">0.6%</span></div>
+          </div><div class="xl">异常率</div></div>
+        </div>
+        <div class="legend"><span><i style="background:var(--green)"></i>灰度组（命中新版）</span><span><i style="background:#c3cbd6"></i>对照组（同条件未放量）</span></div>
+      </div>
+    </div>
+    <div class="cap">▲ <b>数据分析</b>：新版转化率更高、客诉率更低 → 可以推全量；若变差则关闭回滚</div>
+    <div class="note"><div class="nt">分组口径</div><b>灰度组</b>=命中新版的会员；<b>对照组</b>=满足相同硬条件、但未落入放量百分比的人（同质可比，才有说服力）。</div>
+  </section>
+
+  <!-- 8 操作日志 -->
+  <section id="s8">
+    <div class="sec-h"><span class="no">8</span><h2>操作日志</h2></div>
+    <p class="lead">记录「谁在什么时候改了什么」，用于排查：谁改了规则、谁推了全量、改前改后是什么。支持按功能 Key 筛选。</p>
+    <div class="mock">
+      <div class="mock-bar"><i class="dot-r"></i><i class="dot-y"></i><i class="dot-g"></i><span class="url">灰度发布 · 操作日志</span></div>
+      <div class="mock-body">
+        <table class="mt">
+          <tr><th>操作时间</th><th>操作人</th><th>操作IP</th><th>功能Key</th><th>操作类型</th><th>修改前→修改后</th></tr>
+          <tr><td>06-24 13:02</td><td>admin</td><td>10.8.1.22</td><td><span class="key">new_recharge_page</span></td><td><span class="b-st st-full">推全量</span></td><td>灰度中 → 已全量</td></tr>
+          <tr><td>06-24 11:40</td><td>fendi</td><td>10.8.1.30</td><td><span class="key">new_recharge_page</span></td><td><span class="b-st st-gray">编辑规则</span></td><td>百分比 10% → 20%</td></tr>
+          <tr><td>06-23 18:15</td><td>admin</td><td>10.8.1.22</td><td><span class="key">recharge_page_v3</span></td><td><span class="b-st st-close">关闭</span></td><td>灰度中 → 已关闭</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="cap">▲ <b>操作日志</b>：记录新建/编辑规则/推全量/关闭等关键操作，留痕可追溯，可按功能 Key 筛选</div>
+  </section>
+
+  <footer>灰度发布 · 全功能解说（图文版）　·　配套：《框架与逻辑说明》《灰度发布功能需求文档 v2》</footer>
+
+</div>
+</body>
+</html>
